@@ -1,5 +1,7 @@
 package io.github.arsalanpeerzada.reclaim.ui.checkin
 
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,8 +23,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,8 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
 import io.github.arsalanpeerzada.reclaim.AppContainer
 import io.github.arsalanpeerzada.reclaim.R
 import io.github.arsalanpeerzada.reclaim.domain.Who5
@@ -129,13 +134,16 @@ private fun AnswerRow(label: String, selected: Boolean, colour: Color, onClick: 
 private fun Result(raw: Int, history: Map<LocalDate, Int>, today: LocalDate, onDone: () -> Unit) {
     val palette = ReclaimTheme.palette
     val percent = Who5.percent(raw)
+    var target by remember { mutableIntStateOf(0) }
+    LaunchedEffect(percent) { target = percent }
+    val counted by animateIntAsState(target, tween(1100), label = "score")
     // Today's result replaces any earlier one today; compare with the last one before today.
     val ordered = (history + (today to raw)).toSortedMap()
     val previous = ordered.entries.lastOrNull { it.key.isBefore(today) }
 
     GameCard(Modifier.fillMaxWidth(), colour = palette.softViolet) {
         Row(verticalAlignment = Alignment.Bottom) {
-            Text("$percent", style = MaterialTheme.typography.displayLarge, color = palette.text)
+            Text("$counted", style = MaterialTheme.typography.displayLarge, color = palette.text)
             Text(" / 100", style = MaterialTheme.typography.titleLarge, color = palette.textMuted, modifier = Modifier.padding(bottom = 10.dp))
         }
         val change = previous?.let { percent - Who5.percent(it.value) }

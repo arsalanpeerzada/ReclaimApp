@@ -32,6 +32,14 @@ data class Settings(
     val graduatedOn: LocalDate?,
     /** When the user last said "not yet" to graduating; asked again a month later. */
     val graduationDismissedOn: LocalDate?,
+    /** Opted in to sharing anonymous daily summaries. Off unless the user says yes. */
+    val shareStats: Boolean,
+    /** Within that, also share mood tags and WHO-5 scores (health data: its own explicit yes). */
+    val shareWellbeing: Boolean,
+    /** The last completed day already uploaded. */
+    val lastUploadedDay: LocalDate?,
+    /** The highest level already celebrated, so each level-up gets its moment once. */
+    val celebratedLevel: Int,
 ) {
     companion object {
         const val DEFAULT_TYPICAL = 200
@@ -51,6 +59,10 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
             lastReflectedWeek = prefs[LAST_REFLECTED_WEEK]?.let(LocalDate::ofEpochDay),
             graduatedOn = prefs[GRADUATED_ON]?.let(LocalDate::ofEpochDay),
             graduationDismissedOn = prefs[GRADUATION_DISMISSED_ON]?.let(LocalDate::ofEpochDay),
+            shareStats = prefs[SHARE_STATS] ?: false,
+            shareWellbeing = prefs[SHARE_WELLBEING] ?: false,
+            lastUploadedDay = prefs[LAST_UPLOADED_DAY]?.let(LocalDate::ofEpochDay),
+            celebratedLevel = prefs[CELEBRATED_LEVEL] ?: 1,
         )
     }
 
@@ -90,6 +102,23 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it[GRADUATION_DISMISSED_ON] = day.toEpochDay() }
     }
 
+    suspend fun setSharing(stats: Boolean, wellbeing: Boolean) {
+        dataStore.edit {
+            it[SHARE_STATS] = stats
+            it[SHARE_WELLBEING] = stats && wellbeing
+            // Stopping and starting again re-sends history from the beginning.
+            if (!stats) it.remove(LAST_UPLOADED_DAY)
+        }
+    }
+
+    suspend fun markCelebrated(level: Int) {
+        dataStore.edit { it[CELEBRATED_LEVEL] = level }
+    }
+
+    suspend fun markUploaded(day: LocalDate) {
+        dataStore.edit { it[LAST_UPLOADED_DAY] = day.toEpochDay() }
+    }
+
     /** Forgets every setting, back to a fresh install. */
     suspend fun clearAll() {
         dataStore.edit { it.clear() }
@@ -105,5 +134,9 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         val COUNTER_BUBBLE = booleanPreferencesKey("counter_bubble")
         val GRADUATED_ON = longPreferencesKey("graduated_on")
         val GRADUATION_DISMISSED_ON = longPreferencesKey("graduation_dismissed_on")
+        val SHARE_STATS = booleanPreferencesKey("share_stats")
+        val SHARE_WELLBEING = booleanPreferencesKey("share_wellbeing")
+        val LAST_UPLOADED_DAY = longPreferencesKey("last_uploaded_day")
+        val CELEBRATED_LEVEL = intPreferencesKey("celebrated_level")
     }
 }

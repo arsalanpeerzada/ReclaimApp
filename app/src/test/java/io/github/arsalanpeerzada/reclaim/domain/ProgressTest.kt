@@ -1,10 +1,10 @@
 package io.github.arsalanpeerzada.reclaim.domain
 
 import io.github.arsalanpeerzada.reclaim.counting.TrackedApp
-import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.time.LocalDate
 
 class ProgressTest {
     private val start = LocalDate.of(2026, 10, 10)

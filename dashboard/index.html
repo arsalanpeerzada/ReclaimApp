@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Reclaim Impact</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg class="pip" viewBox="0 0 120 130" aria-hidden="true">
+        <path d="M60 22c0-8 5-13 13-15" fill="none" stroke="#1D1733" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="76" cy="7" r="6" fill="#FF7657" stroke="#1D1733" stroke-width="3"/>
+        <path d="M60 22c26 0 46 20 46 48s-18 48-46 48S14 98 14 70 34 22 60 22z" fill="#FFC83D" stroke="#1D1733" stroke-width="5"/>
+        <ellipse cx="46" cy="68" rx="5" ry="7" fill="#1D1733"/><ellipse cx="74" cy="68" rx="5" ry="7" fill="#1D1733"/>
+        <path d="M48 86c6 7 18 7 24 0" fill="none" stroke="#1D1733" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>Reclaim impact</h1>
+        <p class="sub" id="asof">Anonymous, opt-in stats</p>
+      </div>
+    </div>
+    <div class="controls" role="group" aria-label="Data source">
+      <button type="button" class="seg" id="src-live" aria-pressed="false">Live data</button>
+      <button type="button" class="seg" id="src-sample" aria-pressed="true">Sample data</button>
+      <button type="button" class="ghost" id="auth" hidden>Sign in</button>
+    </div>
+  </header>
+
+  <div class="banner" id="sample-banner" role="note">
+    <strong>SAMPLE DATA.</strong> Generated people for rehearsing the dashboard. These are not results and must not be shown to investors as real.
+  </div>
+  <p class="status" id="status" aria-live="polite"></p>
+
+  <main>
+    <section class="tiles" id="tiles" aria-label="Headline numbers"></section>
+
+    <section class="grid">
+      <article class="card wide">
+        <h2>Reels per day since starting</h2>
+        <p class="hint">Average across everyone on their day 1, day 2 and so on (days with at least five people).</p>
+        <div id="chart-cohort" class="chart"></div>
+      </article>
+      <article class="card">
+        <h2>Weekly active people</h2>
+        <p class="hint">People sharing at least one day in each of the last 12 weeks.</p>
+        <div id="chart-weekly" class="chart"></div>
+      </article>
+      <article class="card">
+        <h2>Wellbeing (WHO-5)</h2>
+        <p class="hint">First check-in against the latest, for people with two or more. 0 to 100, higher is better.</p>
+        <div id="chart-who5" class="chart"></div>
+      </article>
+      <article class="card">
+        <h2>Where the reels come from</h2>
+        <div id="chart-apps" class="chart"></div>
+      </article>
+      <article class="card">
+        <h2>Mood and scrolling</h2>
+        <div id="mood"></div>
+      </article>
+    </section>
+
+    <section class="card pitch">
+      <div class="pitch-head">
+        <h2>Pitch summary</h2>
+        <button type="button" class="ghost" id="copy">Copy</button>
+      </div>
+      <pre id="pitch"></pre>
+    </section>
+
+    <section class="card notes">
+      <h2>How these numbers are made</h2>
+      <ul>
+        <li>Only people who opted in are counted. Each phone uploads one summary per finished day under an anonymous id: reel totals, budget, quests, pause outcomes and, with a separate yes, mood and WHO-5 scores. Nothing about what they watched.</li>
+        <li><strong>Reel change</strong>: average of the first 7 shared days against the latest 7, for people with at least 14 days.</li>
+        <li><strong>Pause stop rate</strong>: share of mindful pauses where the person chose "I'm done for now".</li>
+        <li><strong>Retention</strong>: of people who started at least 7 (or 30) days ago, how many still shared a day at that point. Graduates stop on purpose.</li>
+        <li><strong>Hours won back</strong>: reels below each person's own usual day, at about 5 seconds a reel.</li>
+        <li>Opt-in users are self-selected, so these show association, not cause. A controlled study would be needed for causal claims.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

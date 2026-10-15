@@ -12,17 +12,23 @@ import io.github.arsalanpeerzada.reclaim.ui.theme.ReclaimTheme
  * Shows the mindful pause over Instagram or TikTok. An accessibility overlay needs no extra
  * permission. It is friction, not a block: after one breath the user chooses.
  */
-class MindfulPauseOverlay(private val service: AccessibilityService) {
+class MindfulPauseOverlay(
+    private val service: AccessibilityService,
+    /** Called once when the pause shows (false) and again if the user stops (true). */
+    private val onOutcome: (stopped: Boolean) -> Unit = {},
+) {
     private val window = OverlayWindow(service.getSystemService(WindowManager::class.java))
 
     fun show(request: PauseRequest) {
         if (window.isShowing) return
+        onOutcome(false)
         val view = ComposeView(service).apply {
             setContent {
                 ReclaimTheme {
                     MindfulPauseScreen(
                         request = request,
                         onDone = {
+                            onOutcome(true)
                             dismiss()
                             service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
                         },

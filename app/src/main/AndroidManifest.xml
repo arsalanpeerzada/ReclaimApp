@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- No INTERNET permission: everything stays on the phone. -->
+    <!--
+        Internet is used for one thing only: uploading anonymous daily summaries to Firebase, and only
+        after the user opts in (Settings › Anonymous stats). Without consent nothing is sent.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".ReclaimApp"

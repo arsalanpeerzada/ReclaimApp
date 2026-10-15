@@ -1,7 +1,15 @@
 package io.github.arsalanpeerzada.reclaim.ui.components
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,6 +33,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -31,6 +42,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -75,17 +87,22 @@ fun PillButton(
     enabled: Boolean = true,
 ) {
     val palette = ReclaimTheme.palette
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(if (pressed) 0.96f else 1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "press")
+    val nudge by animateDpAsState(if (pressed) 4.dp else 0.dp, label = "arrow")
     Surface(
         onClick = onClick,
         enabled = enabled,
         shape = CircleShape,
         color = palette.pill,
         contentColor = palette.onPill,
-        modifier = modifier.fillMaxWidth().height(60.dp).alpha(if (enabled) 1f else 0.4f),
+        interactionSource = interaction,
+        modifier = modifier.fillMaxWidth().height(60.dp).graphicsLayer { scaleX = scale; scaleY = scale }.alpha(if (enabled) 1f else 0.4f),
     ) {
         Row(Modifier.padding(start = 26.dp, end = 7.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(text, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-            Box(Modifier.size(46.dp).background(badge, CircleShape), contentAlignment = Alignment.Center) {
+            Box(Modifier.offset(x = nudge).size(46.dp).background(badge, CircleShape), contentAlignment = Alignment.Center) {
                 Icon(painterResource(R.drawable.ic_arrow_forward), contentDescription = null, tint = Bright.Ink, modifier = Modifier.size(20.dp))
             }
         }
@@ -155,7 +172,7 @@ fun StatTile(
     ) {
         Icon(painterResource(icon), contentDescription = null, tint = Bright.Ink, modifier = Modifier.size(22.dp))
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(value, style = MaterialTheme.typography.headlineMedium, color = Bright.Ink)
+            RollingNumber(value, MaterialTheme.typography.headlineMedium, Bright.Ink)
             if (unit != null) {
                 Text(unit, style = MaterialTheme.typography.titleLarge, color = Bright.Ink, modifier = Modifier.padding(start = 2.dp, bottom = 2.dp))
             }
@@ -185,7 +202,7 @@ fun StepperCard(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             CircleIconButton(R.drawable.ic_minus, "$step fewer", { set(value - step) }, container = palette.softCoral, size = 56.dp)
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("$value", style = MaterialTheme.typography.displayLarge, color = palette.text)
+                RollingNumber("$value", MaterialTheme.typography.displayLarge, palette.text)
                 Text(unit, style = MaterialTheme.typography.bodyMedium, color = palette.textMuted)
             }
             CircleIconButton(R.drawable.ic_plus, "$step more", { set(value + step) }, container = palette.softMint, size = 56.dp)
@@ -194,11 +211,13 @@ fun StepperCard(
         Row(Modifier.fillMaxWidth().height(26.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Bottom) {
             repeat(TICKS) { i ->
                 val on = (i + 0.5f) / TICKS <= fraction
+                val colour by animateColorAsState(if (on) Bright.cycle[i % Bright.cycle.size] else palette.track, tween(220), label = "tick")
+                val height by animateDpAsState((if (on) 10 + i * 0.8f else 8f).dp, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "tick height")
                 Box(
                     Modifier
                         .weight(1f)
-                        .height((10 + i * 0.8f).dp)
-                        .background(if (on) Bright.cycle[i % Bright.cycle.size] else palette.track, CircleShape),
+                        .height(height)
+                        .background(colour, CircleShape),
                 )
             }
         }
@@ -298,7 +317,7 @@ fun PermissionCards(modifier: Modifier = Modifier) {
         )
         NoticeCard(
             R.drawable.ic_phone, Bright.Sky, palette.softSky, "It keeps",
-            "Daily totals per app, on this phone only. Reclaim has no internet permission, so nothing can leave.",
+            "Daily totals per app, on this phone. Nothing leaves it unless you choose to share anonymous stats.",
         )
         Text(
             "Find Reclaim under Downloaded apps and switch it on. Leave its shortcut switch off: that only adds Android's own " +
@@ -306,6 +325,27 @@ fun PermissionCards(modifier: Modifier = Modifier) {
                 "App info, tap the three-dot menu and choose Allow restricted settings.",
             style = MaterialTheme.typography.bodySmall,
             color = palette.textMuted,
+        )
+    }
+}
+
+/** Exactly what anonymous stats sharing sends, and what it never does. */
+@Composable
+fun ShareDetails(modifier: Modifier = Modifier) {
+    val palette = ReclaimTheme.palette
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        NoticeCard(
+            R.drawable.ic_check, Bright.Mint, palette.softMint, "What's shared, once a day",
+            "Reel totals for Instagram and TikTok, your budget and whether you stayed within it, quests ticked off, " +
+                "how mindful pauses went, your level and streak. Under an anonymous id, not your name.",
+        )
+        NoticeCard(
+            R.drawable.ic_eye_off, Bright.Pink, palette.softPink, "Never shared",
+            "What you watch, other apps, times of day, your name, email, contacts, location or device id.",
+        )
+        NoticeCard(
+            R.drawable.ic_heart, Bright.Violet, palette.softViolet, "Only if you also say yes",
+            "Your daily mood tags and wellbeing check-in scores. These are about your health, so they get their own switch.",
         )
     }
 }

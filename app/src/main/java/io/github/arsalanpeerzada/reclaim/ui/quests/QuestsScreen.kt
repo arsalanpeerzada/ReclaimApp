@@ -2,6 +2,9 @@ package io.github.arsalanpeerzada.reclaim.ui.quests
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,9 +25,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -40,6 +47,7 @@ import io.github.arsalanpeerzada.reclaim.AppContainer
 import io.github.arsalanpeerzada.reclaim.R
 import io.github.arsalanpeerzada.reclaim.domain.Quest
 import io.github.arsalanpeerzada.reclaim.domain.Quests
+import io.github.arsalanpeerzada.reclaim.ui.components.ConfettiBurst
 import io.github.arsalanpeerzada.reclaim.ui.components.FloatingNavClearance
 import io.github.arsalanpeerzada.reclaim.ui.components.GameCard
 import io.github.arsalanpeerzada.reclaim.ui.components.PipMood
@@ -122,6 +130,14 @@ private val QuestColours = listOf(Bright.Coral, Bright.Sky, Bright.Sunflower)
 @Composable
 private fun QuestCard(item: QuestItem, colour: Color, onToggle: () -> Unit) {
     val palette = ReclaimTheme.palette
+    // Bursts only when the user ticks it now, not when the screen opens on a quest already done.
+    var burst by remember { mutableIntStateOf(0) }
+    val check by animateFloatAsState(
+        if (item.done) 1f else 0.8f,
+        spring(dampingRatio = Spring.DampingRatioHighBouncy, stiffness = Spring.StiffnessMedium),
+        label = "check",
+    )
+    Box {
     GameCard(Modifier.fillMaxWidth(), padding = 16.dp) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Box(Modifier.size(52.dp).background(colour, RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
@@ -132,11 +148,15 @@ private fun QuestCard(item: QuestItem, colour: Color, onToggle: () -> Unit) {
                 Text(item.quest.detail, style = MaterialTheme.typography.bodyMedium, color = palette.textMuted)
             }
             Surface(
-                onClick = onToggle,
+                onClick = {
+                    if (!item.done) burst++
+                    onToggle()
+                },
                 shape = CircleShape,
                 color = if (item.done) Bright.Mint else palette.track,
                 modifier = Modifier
                     .size(48.dp)
+                    .graphicsLayer { scaleX = check; scaleY = check }
                     .semantics {
                         role = Role.Checkbox
                         stateDescription = if (item.done) "Done" else "Not done"
@@ -163,6 +183,13 @@ private fun QuestCard(item: QuestItem, colour: Color, onToggle: () -> Unit) {
                     .padding(horizontal = 14.dp, vertical = 10.dp),
             )
         }
+    }
+    ConfettiBurst(
+        trigger = burst.takeIf { it > 0 }?.let { "${item.quest.id}-$it" },
+        modifier = Modifier.matchParentSize(),
+        pieces = if (item.surprise) 70 else 32,
+        colours = if (item.surprise) Bright.cycle else listOf(Bright.Sunflower, Bright.Mint, colour),
+    )
     }
 }
 

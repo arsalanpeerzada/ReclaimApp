@@ -1,6 +1,9 @@
 package io.github.arsalanpeerzada.reclaim.ui.today
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -23,7 +26,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +42,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -44,21 +50,28 @@ import io.github.arsalanpeerzada.reclaim.AppContainer
 import io.github.arsalanpeerzada.reclaim.R
 import io.github.arsalanpeerzada.reclaim.counting.TrackedApp
 import io.github.arsalanpeerzada.reclaim.domain.DayOutcome
+import io.github.arsalanpeerzada.reclaim.domain.Level
 import io.github.arsalanpeerzada.reclaim.domain.Moods
 import io.github.arsalanpeerzada.reclaim.domain.Overview
 import io.github.arsalanpeerzada.reclaim.domain.Progress
 import io.github.arsalanpeerzada.reclaim.domain.Streaks
+import io.github.arsalanpeerzada.reclaim.ui.components.Appear
 import io.github.arsalanpeerzada.reclaim.ui.components.BudgetMeter
+import io.github.arsalanpeerzada.reclaim.ui.components.ConfettiBurst
 import io.github.arsalanpeerzada.reclaim.ui.components.FloatingNavClearance
 import io.github.arsalanpeerzada.reclaim.ui.components.GameCard
 import io.github.arsalanpeerzada.reclaim.ui.components.MoodFaces
 import io.github.arsalanpeerzada.reclaim.ui.components.PillButton
+import io.github.arsalanpeerzada.reclaim.ui.components.Pip
 import io.github.arsalanpeerzada.reclaim.ui.components.PipLook
 import io.github.arsalanpeerzada.reclaim.ui.components.PipMood
 import io.github.arsalanpeerzada.reclaim.ui.components.PipSays
+import io.github.arsalanpeerzada.reclaim.ui.components.RollingNumber
 import io.github.arsalanpeerzada.reclaim.ui.components.StatTile
 import io.github.arsalanpeerzada.reclaim.ui.components.TextLink
 import io.github.arsalanpeerzada.reclaim.ui.components.pipLine
+import io.github.arsalanpeerzada.reclaim.ui.components.popIn
+import io.github.arsalanpeerzada.reclaim.ui.components.rememberReducedMotion
 import io.github.arsalanpeerzada.reclaim.ui.theme.Bright
 import io.github.arsalanpeerzada.reclaim.ui.theme.ReclaimTheme
 import java.time.format.DateTimeFormatter
@@ -90,36 +103,69 @@ fun TodayScreen(
             .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = FloatingNavClearance),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Header(overview)
-        if (!countingEnabled) CountingOffCard(onOpenAccessibilitySettings)
-        GraduationCard(current.graduation, current.typicalReelsPerDay, onGraduate = {
-            viewModel.graduate()
-            // Graduating means not needing the counter: offer to switch it off right away.
-            onOpenAccessibilitySettings()
-        }, onNotYet = viewModel::notYet)
-        if (current.reflectionDue) {
-            PromptCard(
-                ReclaimTheme.palette.softSky, PipMood.Happy, "Your weekly reflection is ready",
-                "Look back at last week and choose next week's budget.", "Reflect", Bright.Sky, onOpenReflection,
-            )
+        // Each block rises in a beat after the one above it.
+        Appear(0) { Header(overview) }
+        if (!countingEnabled) Appear(1) { CountingOffCard(onOpenAccessibilitySettings) }
+        Appear(1) {
+            GraduationCard(current.graduation, current.typicalReelsPerDay, onGraduate = {
+                viewModel.graduate()
+                // Graduating means not needing the counter: offer to switch it off right away.
+                onOpenAccessibilitySettings()
+            }, onNotYet = viewModel::notYet)
         }
-        RingCard(overview)
+        if (current.reflectionDue) {
+            Appear(2) {
+                PromptCard(
+                    ReclaimTheme.palette.softSky, PipMood.Happy, "Your weekly reflection is ready",
+                    "Look back at last week and choose next week's budget.", "Reflect", Bright.Sky, onOpenReflection,
+                )
+            }
+        }
+        Appear(2) { RingCard(overview) }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatTile(R.drawable.ic_flame, "${overview.streak.current}", "day streak", Bright.Coral, Modifier.weight(1f))
+            StatTile(R.drawable.ic_flame, "${overview.streak.current}", "day streak", Bright.Coral, Modifier.weight(1f).popIn(3))
             StatTile(
-                R.drawable.ic_snowflake, "${overview.streak.freezesLeft}", "freezes saved", Bright.Sky, Modifier.weight(1f),
+                R.drawable.ic_snowflake, "${overview.streak.freezesLeft}", "freezes saved", Bright.Sky, Modifier.weight(1f).popIn(4),
                 unit = "/${Streaks.MAX_FREEZES}",
             )
-            StatTile(R.drawable.ic_clock, "${overview.reclaimed.minutes}", "won back", Bright.Sunflower, Modifier.weight(1f), unit = " min")
+            StatTile(R.drawable.ic_clock, "${overview.reclaimed.minutes}", "won back", Bright.Sunflower, Modifier.weight(1f).popIn(5), unit = " min")
         }
-        MoodCard(current.mood, viewModel::setMood)
-        NextUpCard(overview)
-        WeekCard(overview.lastSevenDays)
+        Appear(4) { MoodCard(current.mood, viewModel::setMood) }
+        Appear(5) { NextUpCard(overview) }
+        Appear(6) { WeekCard(overview.lastSevenDays) }
         if (current.checkInDue) {
-            PromptCard(
-                ReclaimTheme.palette.softPink, PipMood.Happy, "Monthly check-in",
-                "Five quick questions about how you've been. It takes a minute.", "Start check-in", Bright.Pink, onOpenCheckIn,
-            )
+            Appear(7) {
+                PromptCard(
+                    ReclaimTheme.palette.softPink, PipMood.Happy, "Monthly check-in",
+                    "Five quick questions about how you've been. It takes a minute.", "Start check-in", Bright.Pink, onOpenCheckIn,
+                )
+            }
+        }
+    }
+    current.levelUp?.let { level -> LevelUpDialog(level) { viewModel.celebrated(level) } }
+}
+
+/** A level reached: Pip cheers and confetti flies. Shown once per level. */
+@Composable
+private fun LevelUpDialog(level: Level, onDismiss: () -> Unit) {
+    val palette = ReclaimTheme.palette
+    Dialog(onDismissRequest = onDismiss) {
+        Box(contentAlignment = Alignment.Center) {
+            GameCard(Modifier.fillMaxWidth().popIn(), colour = palette.ground) {
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Pip(PipMood.Proud, Modifier.size(width = 110.dp, height = 120.dp), description = "Pip, cheering")
+                    Text("Level ${level.number}!", style = MaterialTheme.typography.displaySmall, color = Bright.Violet)
+                    Text("You're ${level.name}", style = MaterialTheme.typography.headlineSmall, color = palette.text)
+                    Text(
+                        level.daysToNext?.let { "${it} more days within budget to reach the next level." } ?: "That's the top level. Pip's very proud.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = palette.textMuted,
+                        textAlign = TextAlign.Center,
+                    )
+                    PillButton("Nice!", onDismiss, badge = Bright.Sunflower)
+                }
+            }
+            ConfettiBurst(trigger = level.number, modifier = Modifier.matchParentSize(), pieces = 60)
         }
     }
 }
@@ -213,10 +259,10 @@ private fun RingCard(overview: Overview) {
                 modifier = Modifier.size(196.dp).semantics { contentDescription = "${today.reels} of ${today.budget} reels used today" },
             )
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
+                RollingNumber(
                     "${today.reels}",
-                    style = MaterialTheme.typography.displayMedium,
-                    color = if (today.reels > today.budget) BudgetMeter.Overflow else palette.text,
+                    MaterialTheme.typography.displayMedium,
+                    if (today.reels > today.budget) BudgetMeter.Overflow else palette.text,
                 )
                 Text("of ${today.budget} reels", style = MaterialTheme.typography.bodyMedium, color = palette.textMuted)
             }
@@ -339,7 +385,7 @@ private fun WeekCard(days: List<DayOutcome>) {
                         if (day == null) {
                             Box(Modifier.fillMaxWidth().height(6.dp).background(palette.track, CircleShape))
                         } else {
-                            Bar(day, Bright.cycle[index % Bright.cycle.size], isToday = day == today, heightFraction = (day.reels / scale).coerceIn(0.06f, 1f))
+                            Bar(day, Bright.cycle[index % Bright.cycle.size], isToday = day == today, heightFraction = (day.reels / scale).coerceIn(0.06f, 1f), order = index)
                         }
                     }
                 }
@@ -362,9 +408,16 @@ private fun WeekCard(days: List<DayOutcome>) {
 }
 
 @Composable
-private fun Bar(day: DayOutcome, colour: Color, isToday: Boolean, heightFraction: Float) {
+private fun Bar(day: DayOutcome, colour: Color, isToday: Boolean, heightFraction: Float, order: Int) {
+    // Bars grow up from the floor one after another, and glide when the count changes.
+    val reduced = rememberReducedMotion()
+    val grown = remember { Animatable(if (reduced) heightFraction else 0f) }
+    LaunchedEffect(heightFraction) {
+        if (grown.value == 0f) kotlinx.coroutines.delay(order * 60L)
+        grown.animateTo(heightFraction, spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow))
+    }
     val ringed = if (isToday) Modifier.border(2.dp, ReclaimTheme.palette.text, CircleShape).padding(3.dp) else Modifier
-    Box(Modifier.fillMaxWidth().fillMaxHeight(heightFraction).then(ringed).clip(CircleShape)) {
+    Box(Modifier.fillMaxWidth().fillMaxHeight(grown.value.coerceIn(0.001f, 1f)).then(ringed).clip(CircleShape)) {
         if (day.withinBudget) {
             Box(Modifier.fillMaxSize().background(colour))
         } else {

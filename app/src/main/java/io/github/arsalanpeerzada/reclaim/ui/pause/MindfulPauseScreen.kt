@@ -35,6 +35,7 @@ import io.github.arsalanpeerzada.reclaim.ui.components.PillButton
 import io.github.arsalanpeerzada.reclaim.ui.components.Pip
 import io.github.arsalanpeerzada.reclaim.ui.components.PipLook
 import io.github.arsalanpeerzada.reclaim.ui.components.TextLink
+import io.github.arsalanpeerzada.reclaim.ui.components.popIn
 import io.github.arsalanpeerzada.reclaim.ui.theme.Bright
 import io.github.arsalanpeerzada.reclaim.ui.theme.ReclaimTheme
 
@@ -62,6 +63,7 @@ fun MindfulPauseScreen(request: PauseRequest, onDone: () -> Unit, onKeepWatching
         Column(
             Modifier
                 .padding(24.dp)
+                .popIn()
                 .fillMaxWidth()
                 .background(palette.ground, RoundedCornerShape(32.dp))
                 .padding(24.dp),

@@ -3,6 +3,12 @@ package io.github.arsalanpeerzada.reclaim.ui
 import android.content.Intent
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -57,7 +63,11 @@ fun ReclaimRoot(container: AppContainer) {
         if (!current.onboarded) {
             OnboardingScreen(
                 countingEnabled = countingEnabled,
+                statsAvailable = container.stats.available,
                 onOpenAccessibilitySettings = openAccessibilitySettings,
+                onShareChoice = { stats, wellbeing ->
+                    if (stats) scope.launch { container.stats.enable(wellbeing) }
+                },
                 onFinish = { budget, typical ->
                     scope.launch { container.settings.completeOnboarding(budget, typical, container.reels.today()) }
                 },
@@ -69,7 +79,15 @@ fun ReclaimRoot(container: AppContainer) {
         BackHandler(enabled = screen != Screen.Today) {
             screen = if (screen == Screen.Diagnostics) Screen.Settings else Screen.Today
         }
-        when (screen) {
+        AnimatedContent(
+            targetState = screen,
+            transitionSpec = {
+                (fadeIn(tween(240)) + slideInVertically(tween(260)) { it / 24 })
+                    .togetherWith(fadeOut(tween(160)))
+            },
+            label = "screen",
+        ) { shown ->
+        when (shown) {
             Screen.Today -> TodayScreen(
                 container = container,
                 countingEnabled = countingEnabled,
@@ -88,6 +106,9 @@ fun ReclaimRoot(container: AppContainer) {
                 onSave = { budget, typical -> scope.launch { container.reels.updateGoals(budget, typical) } },
                 onPauseEnabledChange = { enabled -> scope.launch { container.settings.setPauseEnabled(enabled) } },
                 onCounterBubbleChange = { enabled -> scope.launch { container.settings.setCounterBubbleEnabled(enabled) } },
+                statsAvailable = container.stats.available,
+                onSharingChange = { _, wellbeing -> scope.launch { container.stats.enable(wellbeing) } },
+                onStopSharing = { scope.launch { runCatching { container.stats.stopAndDelete() } } },
                 onDeleteAllData = {
                     scope.launch {
                         container.deleteAllData()
@@ -101,6 +122,7 @@ fun ReclaimRoot(container: AppContainer) {
                 diagnostics = container.diagnostics,
                 onBack = { screen = Screen.Settings },
             )
+        }
         }
         // Sub-screens have their own back button instead of the bar.
         if (screen in setOf(Screen.Today, Screen.World, Screen.Quests, Screen.Settings)) {

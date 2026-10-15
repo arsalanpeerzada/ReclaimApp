@@ -12,3 +12,8 @@ build/
 *.jks
 *.keystore
 keystore.properties
+# Firebase project config (each developer uses their own)
+google-services.json
+dashboard/firebase-config.js
+# Local tool config
+.claude/

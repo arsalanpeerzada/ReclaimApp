@@ -1,8 +1,8 @@
 package io.github.arsalanpeerzada.reclaim.domain
 
-import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.time.LocalDate
 
 class StreaksTest {
     private val start = LocalDate.of(2026, 10, 1)

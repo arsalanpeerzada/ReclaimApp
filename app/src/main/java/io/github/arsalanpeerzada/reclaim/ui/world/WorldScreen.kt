@@ -16,7 +16,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,6 +47,8 @@ import io.github.arsalanpeerzada.reclaim.ui.components.GameCard
 import io.github.arsalanpeerzada.reclaim.ui.components.PipMood
 import io.github.arsalanpeerzada.reclaim.ui.components.PipSays
 import io.github.arsalanpeerzada.reclaim.ui.components.ScreenTitle
+import io.github.arsalanpeerzada.reclaim.ui.components.appearIn
+import io.github.arsalanpeerzada.reclaim.ui.components.popIn
 import io.github.arsalanpeerzada.reclaim.ui.theme.ReclaimTheme
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -102,9 +104,9 @@ fun WorldScreen(container: AppContainer) {
                 }
             }
         }
-        fullWidth { Hero(current) }
-        item { TonightPlot(current.today) }
-        items(plants) { plant -> PlantPlot(plant) }
+        fullWidth { Box(Modifier.appearIn(1)) { Hero(current) } }
+        item { Box(Modifier.popIn(0)) { TonightPlot(current.today) } }
+        itemsIndexed(plants) { index, plant -> Box(Modifier.popIn(index + 1)) { PlantPlot(plant) } }
         fullWidth {
             GameCard(Modifier.fillMaxWidth(), colour = ReclaimTheme.palette.softViolet, padding = 16.dp) {
                 Text("How it grows", style = MaterialTheme.typography.titleLarge, color = ReclaimTheme.palette.text)

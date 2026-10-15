@@ -1,7 +1,14 @@
 package io.github.arsalanpeerzada.reclaim.ui.world
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -16,6 +23,7 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.lerp
 import io.github.arsalanpeerzada.reclaim.domain.PlantKind
 import io.github.arsalanpeerzada.reclaim.domain.Seedling
+import io.github.arsalanpeerzada.reclaim.ui.components.rememberReducedMotion
 import io.github.arsalanpeerzada.reclaim.ui.theme.Bright
 import kotlin.math.PI
 import kotlin.math.cos
@@ -31,12 +39,21 @@ private val Wilt = Color(0xFFA79F95)
  */
 @Composable
 fun PlantArt(kind: PlantKind, wilted: Boolean, modifier: Modifier = Modifier) {
+    // A light breeze: each kind sways at its own pace so the garden never moves in lockstep.
+    val still = rememberReducedMotion()
+    val breeze by rememberInfiniteTransition(label = "breeze").animateFloat(
+        initialValue = -1f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(2100 + kind.ordinal * 230, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "sway",
+    )
     Canvas(modifier) {
         val u = size.minDimension / 100f
         val tint: (Color) -> Color = { if (wilted) lerp(it, Wilt, 0.55f) else it }
+        val sway = if (still) 0f else breeze * (if (wilted) 1f else 3f)
         withTransform({
             translate((size.width - 100 * u) / 2, (size.height - 100 * u) / 2)
-            if (wilted) rotate(16f, pivot = Offset(50 * u, 88 * u))
+            rotate((if (wilted) 16f else 0f) + sway, pivot = Offset(50 * u, 88 * u))
         }) {
             drawPlant(kind, u, tint)
         }
@@ -46,9 +63,21 @@ fun PlantArt(kind: PlantKind, wilted: Boolean, modifier: Modifier = Modifier) {
 /** Today's plot: a sprout while within budget, a resting seed when over. */
 @Composable
 fun SeedlingArt(state: Seedling, modifier: Modifier = Modifier) {
+    // The sprout breathes upwards, as if it's growing while you watch.
+    val still = rememberReducedMotion()
+    val grow by rememberInfiniteTransition(label = "sprout").animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "grow",
+    )
     Canvas(modifier) {
         val u = size.minDimension / 100f
-        withTransform({ translate((size.width - 100 * u) / 2, (size.height - 100 * u) / 2) }) {
+        val g = if (still || state != Seedling.Growing) 1f else grow
+        withTransform({
+            translate((size.width - 100 * u) / 2, (size.height - 100 * u) / 2)
+            scale(1f, g, pivot = Offset(50 * u, 88 * u))
+        }) {
             when (state) {
                 Seedling.Growing -> {
                     stem(u, 66f, Stem)

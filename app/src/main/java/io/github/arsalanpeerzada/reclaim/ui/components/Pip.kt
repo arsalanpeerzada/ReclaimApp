@@ -1,6 +1,12 @@
 package io.github.arsalanpeerzada.reclaim.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
@@ -19,6 +25,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import io.github.arsalanpeerzada.reclaim.domain.Progress
 import io.github.arsalanpeerzada.reclaim.ui.theme.Bright
+import kotlin.math.abs
 
 /** Fixed moods for places that aren't about today's budget. */
 enum class PipMood { Happy, Focused, Calm, Proud }
@@ -58,18 +65,60 @@ data class PipLook(
 fun Pip(mood: PipMood, modifier: Modifier = Modifier, description: String? = null) =
     Pip(PipLook.of(mood), modifier, description)
 
-/** Pip, drawn on the mockup's 120 x 130 grid. Changes of look animate, so Pip visibly sags or perks up. */
+/**
+ * Pip, drawn on the mockup's 120 x 130 grid. Changes of look animate, so Pip visibly sags or perks up.
+ * While [alive], Pip idles: a gentle bob, a blink every few seconds and a swaying antenna, all slower
+ * and smaller the gloomier he is. Off when the user has removed animations.
+ */
 @Composable
-fun Pip(look: PipLook, modifier: Modifier = Modifier, description: String? = null) {
+fun Pip(look: PipLook, modifier: Modifier = Modifier, description: String? = null, alive: Boolean = true) {
     val joy by animateFloatAsState(look.joy, tween(600), label = "joy")
     val gloom by animateFloatAsState(look.gloom, tween(600), label = "gloom")
+    val idle = alive && !rememberReducedMotion()
+    val transition = rememberInfiniteTransition(label = "pip idle")
+    val bob by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(2600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "bob",
+    )
+    val blink by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            keyframes {
+                durationMillis = 3800
+                0f at 0
+                0f at 3500
+                1f at 3580
+                0f at 3680
+            },
+        ),
+        label = "blink",
+    )
+    val sway by transition.animateFloat(
+        initialValue = -1f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "sway",
+    )
     Canvas(if (description != null) modifier.semantics { contentDescription = description } else modifier) {
         val k = minOf(size.width / 120f, size.height / 130f)
+        // Happy Pip bounces higher; gloomy Pip barely moves.
+        val lift = if (idle) -bob * (3.5f - 2.5f * gloom) * k else 0f
+        val squash = if (idle) 1f + bob * 0.02f * (1f - gloom) else 1f
         withTransform({
-            translate((size.width - 120 * k) / 2, (size.height - 130 * k) / 2)
-            scale(k, k, pivot = Offset.Zero)
+            translate((size.width - 120 * k) / 2, (size.height - 130 * k) / 2 + lift)
+            scale(k, k * squash, pivot = Offset.Zero)
         }) {
-            drawPip(joy, gloom, look.eyesClosed, look.openSmile)
+            drawPip(
+                joy = joy,
+                gloom = gloom,
+                eyesClosed = look.eyesClosed,
+                openSmile = look.openSmile,
+                blink = if (idle && !look.eyesClosed) blink else 0f,
+                antennaSway = if (idle) sway * (6f - 4f * gloom) else 0f,
+            )
         }
     }
 }
@@ -77,12 +126,12 @@ fun Pip(look: PipLook, modifier: Modifier = Modifier, description: String? = nul
 private val Gloomy = Color(0xFFB4ADC4)
 private val Tear = Color(0xFF57B8FF)
 
-private fun DrawScope.drawPip(joy: Float, gloom: Float, eyesClosed: Boolean, openSmile: Boolean) {
+private fun DrawScope.drawPip(joy: Float, gloom: Float, eyesClosed: Boolean, openSmile: Boolean, blink: Float, antennaSway: Float) {
     val ink = Bright.Ink
     val outline = Stroke(width = 4f, cap = StrokeCap.Round)
 
-    // Antenna: perky when bright, drooping to the side as gloom rises.
-    val tip = Offset(76f + 6f * gloom, 7f + 22f * gloom)
+    // Antenna: perky when bright, drooping to the side as gloom rises, swaying as Pip idles.
+    val tip = Offset(76f + 6f * gloom + antennaSway, 7f + 22f * gloom + abs(antennaSway) * 0.3f)
     val antenna = Path().apply {
         moveTo(60f, 22f)
         cubicTo(60f, 14f - 4f * gloom, 65f + 4f * gloom, 9f + 4f * gloom, tip.x - 3f, tip.y)
@@ -114,11 +163,12 @@ private fun DrawScope.drawPip(joy: Float, gloom: Float, eyesClosed: Boolean, ope
         drawPath(Path().apply { moveTo(40f, 69f); quadraticTo(46f, 64f, 52f, 69f) }, ink, style = lid)
         drawPath(Path().apply { moveTo(68f, 69f); quadraticTo(74f, 64f, 80f, 69f) }, ink, style = lid)
     } else {
-        val eyeHeight = 14f - 6f * gloom
-        val eyeTop = 61f + 6f * gloom
+        val open = 14f - 6f * gloom
+        val eyeHeight = (open * (1f - blink)).coerceAtLeast(1.5f)
+        val eyeTop = 61f + 6f * gloom + (open - eyeHeight) / 2
         drawOval(ink, topLeft = Offset(41f, eyeTop), size = Size(10f, eyeHeight))
         drawOval(ink, topLeft = Offset(69f, eyeTop), size = Size(10f, eyeHeight))
-        if (gloom < 0.6f) {
+        if (gloom < 0.6f && blink < 0.5f) {
             drawCircle(Color.White, radius = 2f, center = Offset(48f, eyeTop + 3f))
             drawCircle(Color.White, radius = 2f, center = Offset(76f, eyeTop + 3f))
         }

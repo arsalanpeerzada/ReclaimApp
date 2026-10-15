@@ -23,10 +23,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.arsalanpeerzada.reclaim.AppContainer
 import io.github.arsalanpeerzada.reclaim.R
+import io.github.arsalanpeerzada.reclaim.domain.MonthTrend
 import io.github.arsalanpeerzada.reclaim.domain.Progress
 import io.github.arsalanpeerzada.reclaim.domain.ReclaimedTime
 import io.github.arsalanpeerzada.reclaim.domain.Reflections
-import io.github.arsalanpeerzada.reclaim.domain.MonthTrend
 import io.github.arsalanpeerzada.reclaim.domain.Streaks
 import io.github.arsalanpeerzada.reclaim.domain.Trends
 import io.github.arsalanpeerzada.reclaim.domain.WeeklyReflection

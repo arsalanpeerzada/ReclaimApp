@@ -5,14 +5,15 @@ import androidx.lifecycle.viewModelScope
 import io.github.arsalanpeerzada.reclaim.AppContainer
 import io.github.arsalanpeerzada.reclaim.data.Settings
 import io.github.arsalanpeerzada.reclaim.domain.History
+import io.github.arsalanpeerzada.reclaim.domain.Level
 import io.github.arsalanpeerzada.reclaim.domain.MonthTrend
 import io.github.arsalanpeerzada.reclaim.domain.Overview
-import io.github.arsalanpeerzada.reclaim.domain.Trends
-import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 import io.github.arsalanpeerzada.reclaim.domain.Progress
+import io.github.arsalanpeerzada.reclaim.domain.Trends
 import io.github.arsalanpeerzada.reclaim.domain.Weeks
 import io.github.arsalanpeerzada.reclaim.domain.Who5
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +30,8 @@ data class TodayUiState(
     val reflectionDue: Boolean,
     val checkInDue: Boolean,
     val graduation: Graduation,
+    /** A level reached since it was last celebrated, or null. */
+    val levelUp: Level?,
 )
 
 sealed interface Graduation {
@@ -66,7 +69,8 @@ class TodayViewModel(private val container: AppContainer) : ViewModel() {
             reflectionDue = settings.lastReflectedWeek != lastWeek && !startDay.isAfter(lastWeek.plusDays(6)),
             checkInDue = Who5.isDue(who5, today),
             graduation = graduationFor(history, settings, today, startDay),
-        )
+            levelUp = null,
+        ).let { state -> state.copy(levelUp = state.overview.level.takeIf { it.number > settings.celebratedLevel }) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private fun graduationFor(history: History, settings: Settings, today: LocalDate, startDay: LocalDate): Graduation {
@@ -76,6 +80,10 @@ class TodayViewModel(private val container: AppContainer) : ViewModel() {
         val completed = Progress.days(history, today, startDay, settings.dailyBudget).dropLast(1)
         if (!Trends.canGraduate(completed, settings.typicalReelsPerDay)) return Graduation.NotYet
         return Trends.lastMonth(completed)?.let { Graduation.Ready(it) } ?: Graduation.NotYet
+    }
+
+    fun celebrated(level: Level) {
+        viewModelScope.launch { container.settings.markCelebrated(level.number) }
     }
 
     fun graduate() {

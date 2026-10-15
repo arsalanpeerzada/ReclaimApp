@@ -1,10 +1,10 @@
 # Reclaim privacy notice
 
-**Draft, 15 October 2026. Not reviewed.** Have a qualified data protection reviewer check it before any public release. The design doc requires a Data Protection and Security review, and Reclaim stores wellbeing data, which is likely special category (health) data under UK GDPR and EU GDPR.
+**Draft, 15 October 2026. Not reviewed.** Have a qualified data protection reviewer check it before any public release. Reclaim stores wellbeing data, which is likely special category (health) data under UK GDPR and EU GDPR, and can share some of it when the user opts in.
 
 ## The short version
 
-Reclaim keeps everything on your phone. It has no internet permission, so it cannot send anything anywhere. It has no accounts, no analytics, no ads and no backups. You can delete everything from Settings › Your data.
+Everything Reclaim knows stays on your phone unless you choose to share anonymous stats. Sharing is off until you say yes, mood and wellbeing scores need a second, separate yes, and you can stop and delete what you've shared at any time. There are no ads and no backups.
 
 ## What the accessibility service reads
 
@@ -15,35 +15,52 @@ Reclaim keeps everything on your phone. It has no internet permission, so it can
 
 It never reads text, messages, captions, images, video or anything you type, in any app. Scroll events from other apps are dropped before anything about them is read.
 
-## What Reclaim stores, on your phone only
+## What Reclaim stores on your phone
 
 | Data | Detail kept | Purpose |
 |---|---|---|
 | Reel counts | One total per app per day | Budget, streaks, garden, trends |
 | Daily budget | The budget that applied each day | So changing it doesn't rewrite history |
-| Settings | Budget, usual day, start date, switches, reflection and graduation dates | Running the app |
+| Mindful pauses | How many showed and how many ended the session, per day | Insights, and the impact stats if shared |
+| Settings | Budget, usual day, start date, switches, reflection, graduation and sharing choices | Running the app |
 | Quests | Which quests you ticked off, by day | Garden flowers |
 | Mood tags | One number (1 to 5) per day you tag | The weekly mood insight |
 | WHO-5 check-ins | The total score only, by day; individual answers aren't kept | Showing your wellbeing trend back to you |
 
 **Not stored:** individual reels, times you watched, what you watched, or anything about other apps.
 
-The counting diagnostics screen keeps the last 80 counting decisions in memory only, and they're gone when the app closes. Debug builds also write those decisions to the Android log.
+The counting diagnostics screen keeps the last 80 counting decisions in memory only. Debug builds also write them to the Android log.
 
-## Sharing
+## Anonymous stats (opt-in)
 
-Nothing is shared unless you tap **Share my week**. That creates an image showing counts only (days within budget, streak, reels a day, minutes won back) and hands it to the app you choose. What happens to it after that is up to you and that app.
+If you say yes in onboarding or Settings › Anonymous stats, Reclaim uploads one summary per finished day to the developer's Firebase project (Google Cloud Firestore), under an anonymous Firebase account. It has no name, email or device id.
+
+| Shared | Only with the second yes | Never shared |
+|---|---|---|
+| Daily reel totals for Instagram and TikTok, budget, whether you stayed within it, quests ticked off, mindful pause outcomes, days since you started, level, streak, graduation date, app version | Daily mood tags, WHO-5 scores | What you watch, other apps, times of day, your name, email, contacts, location, device id |
+
+- **Purpose:** to show, in aggregate, whether Reclaim helps people scroll less and feel better. The developer sees totals across everyone through an admin dashboard and may share those aggregate results, for example with investors.
+- **Lawful basis (to confirm in review):** consent. For mood and WHO-5 data, explicit consent through the separate switch.
+- **Where:** Firebase (Google). The region depends on the project's Firestore location, which should be chosen before launch (an EU region is the simplest fit for EU users).
+- **Retention (to decide):** suggested 24 months from upload, then deletion.
+- **Stopping:** switching sharing off deletes everything this phone shared, along with its anonymous account. "Delete all my data" does the same.
+
+## Sharing a squad card
+
+Nothing is sent unless you tap **Share my week**. That creates an image showing counts only and hands it to the app you choose.
 
 ## Your control
 
 - Switch counting off at any time in Android's accessibility settings.
 - Switch off the live counter and the mindful pause in Settings.
-- Delete everything in Settings › Your data › Delete all my data. There is no other copy to delete.
-- Uninstalling Reclaim also deletes all its data. App backup is switched off (`allowBackup="false"`).
+- Stop anonymous stats and delete what was shared in Settings › Anonymous stats.
+- Delete everything in Settings › Your data › Delete all my data.
+- Uninstalling deletes everything on the phone. App backup is switched off (`allowBackup="false"`). If you shared stats, stop sharing before uninstalling, as an uninstalled app can't delete its upload.
 
 ## Open points for the reviewer
 
-- Lawful basis and explicit consent for mood and WHO-5 data, if these count as health data.
-- Whether the in-app disclosure meets Google Play's prominent disclosure and consent requirements (see `docs/play-accessibility-declaration.md`).
-- Whether reading the front app's name from every app needs to be called out more prominently.
-- The WHO-5 terms of use and attribution, which need confirming on the official WHO-5 page.
+- Consent wording, explicit consent for health data, and whether a DPIA is needed.
+- Firestore region, retention period and a way to request deletion after uninstalling.
+- Google Play's prominent disclosure and consent requirements (see `docs/play-accessibility-declaration.md`), and the Data safety form, which must now list the shared data.
+- Whether reading the front app's name from every app needs more prominence.
+- WHO-5 terms of use and attribution, to confirm on the official WHO-5 page.

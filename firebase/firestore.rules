@@ -1,0 +1,73 @@
+rules_version = '2';
+
+// Reclaim: anonymous, opt-in stats.
+// - Each phone signs in anonymously and may only write and delete its own documents.
+// - Only admins may read across users (the dashboard). Replace the placeholder below with your
+//   admin Google account(s) before deploying; never commit real addresses to a public repo.
+// - Writes are validated so a phone can't send anything beyond the agreed summary fields.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['ADMIN_EMAIL_PLACEHOLDER@example.com'];
+    }
+
+    function onlyKeys(allowed) {
+      return request.resource.data.keys().hasOnly(allowed);
+    }
+
+    function count(field) {
+      return request.resource.data[field] is int && request.resource.data[field] >= 0 && request.resource.data[field] < 100000;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) && onlyKeys([
+        'startDay', 'typicalReelsPerDay', 'dailyBudget', 'level', 'streak',
+        'graduatedOn', 'sharesWellbeing', 'appVersion', 'updatedAt'
+      ]);
+
+      match /days/{date} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && onlyKeys(['date', 'dayIndex', 'reels', 'budget', 'within', 'instagram', 'tiktok',
+                       'quests', 'pausesShown', 'pausesStopped', 'mood'])
+          && request.resource.data.date == date
+          && count('reels') && count('budget') && count('instagram') && count('tiktok')
+          && count('quests') && count('pausesShown') && count('pausesStopped')
+          && (!('mood' in request.resource.data) || request.resource.data.mood == null
+              || (request.resource.data.mood is int && request.resource.data.mood >= 1 && request.resource.data.mood <= 5));
+      }
+
+      match /checkins/{date} {
+        allow read: if isOwner(uid) || isAdmin();
+        allow delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && onlyKeys(['date', 'score'])
+          && request.resource.data.date == date
+          && request.resource.data.score is int
+          && request.resource.data.score >= 0 && request.resource.data.score <= 100;
+      }
+    }
+
+    // The dashboard reads every user's days and check-ins with collection-group queries.
+    match /{path=**}/days/{date} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/checkins/{date} {
+      allow read: if isAdmin();
+    }
+  }
+}

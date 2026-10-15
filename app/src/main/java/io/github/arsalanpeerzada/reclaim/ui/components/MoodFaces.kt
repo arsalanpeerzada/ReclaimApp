@@ -1,5 +1,8 @@
 package io.github.arsalanpeerzada.reclaim.ui.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -22,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.arsalanpeerzada.reclaim.domain.Moods
@@ -44,10 +49,17 @@ fun MoodFaces(selected: Int?, onSelect: (Int) -> Unit, modifier: Modifier = Modi
                     .padding(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                // The chosen face springs up; the others settle back.
+                val scale by animateFloatAsState(
+                    if (isSelected) 1.15f else 1f,
+                    spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                    label = "mood",
+                )
                 Face(
                     colour = MoodColours[index],
                     smile = (index - 2) / 2f,
                     modifier = Modifier
+                        .graphicsLayer { scaleX = scale; scaleY = scale }
                         .size(48.dp)
                         .then(if (isSelected) Modifier.border(3.dp, ReclaimTheme.palette.text, CircleShape) else Modifier),
                 )

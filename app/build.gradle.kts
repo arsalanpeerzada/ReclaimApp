@@ -7,6 +7,12 @@ plugins {
     alias(libs.plugins.room)
 }
 
+// Firebase is configured by google-services.json from your own Firebase project (Git ignores it).
+// Without it the app still builds and runs; anonymous stats sharing simply isn't offered.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 // Release signing comes from keystore.properties, which Git ignores (see keystore.properties.example).
 // Without it, release builds are simply unsigned.
 val keystore = Properties().apply {
@@ -73,6 +79,13 @@ dependencies {
     implementation(libs.room.runtime)
     ksp(libs.room.compiler)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.work.runtime)
+
+    // Opt-in anonymous stats for the admin dashboard.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     testImplementation(libs.junit)
 }

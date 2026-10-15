@@ -11,10 +11,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -35,6 +35,7 @@ import io.github.arsalanpeerzada.reclaim.ui.components.PillButton
 import io.github.arsalanpeerzada.reclaim.ui.components.PipMood
 import io.github.arsalanpeerzada.reclaim.ui.components.PipSays
 import io.github.arsalanpeerzada.reclaim.ui.components.ScreenTitle
+import io.github.arsalanpeerzada.reclaim.ui.components.ShareDetails
 import io.github.arsalanpeerzada.reclaim.ui.components.StepperCard
 import io.github.arsalanpeerzada.reclaim.ui.components.budgetRange
 import io.github.arsalanpeerzada.reclaim.ui.theme.Bright
@@ -48,6 +49,9 @@ fun SettingsScreen(
     onPauseEnabledChange: (Boolean) -> Unit,
     onCounterBubbleChange: (Boolean) -> Unit,
     onDeleteAllData: () -> Unit,
+    statsAvailable: Boolean,
+    onSharingChange: (stats: Boolean, wellbeing: Boolean) -> Unit,
+    onStopSharing: () -> Unit,
     onOpenAccessibilitySettings: () -> Unit,
     onOpenDiagnostics: () -> Unit,
 ) {
@@ -124,12 +128,46 @@ fun SettingsScreen(
             PillButton("Open diagnostics", onOpenDiagnostics, badge = Bright.Sky)
         }
 
+        if (statsAvailable) {
+            var confirmStop by rememberSaveable { mutableStateOf(false) }
+            GameCard(Modifier.fillMaxWidth()) {
+                Text("Anonymous stats", style = MaterialTheme.typography.titleLarge, color = palette.text)
+                Text(
+                    "Help prove Reclaim works by sharing anonymous daily totals. Optional, off unless you switch it on.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = palette.textMuted,
+                )
+                ShareDetails()
+                ToggleRow("Share anonymous stats", settings.shareStats) { on ->
+                    if (on) onSharingChange(true, settings.shareWellbeing) else confirmStop = true
+                }
+                if (settings.shareStats) {
+                    ToggleRow("Include mood and wellbeing scores", settings.shareWellbeing) { onSharingChange(true, it) }
+                }
+            }
+            if (confirmStop) {
+                AlertDialog(
+                    onDismissRequest = { confirmStop = false },
+                    title = { Text("Stop sharing?") },
+                    text = { Text("Reclaim stops uploading and deletes everything this phone has shared, along with its anonymous id.") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            confirmStop = false
+                            onStopSharing()
+                        }) { Text("Stop and delete") }
+                    },
+                    dismissButton = { TextButton(onClick = { confirmStop = false }) { Text("Keep sharing") } },
+                )
+            }
+        }
+
         var confirmDelete by rememberSaveable { mutableStateOf(false) }
         GameCard(Modifier.fillMaxWidth(), colour = palette.softCoral) {
             Text("Your data", style = MaterialTheme.typography.titleLarge, color = palette.text)
             Text(
                 "Everything Reclaim knows is on this phone: daily counts, budgets, quests, moods and check-ins. " +
-                    "Nothing is uploaded and there are no backups. Deleting it starts Reclaim afresh.",
+                    "There are no backups, and nothing is uploaded unless you share anonymous stats. " +
+                    "Deleting starts Reclaim afresh and also deletes anything you've shared.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = palette.text,
             )
@@ -154,6 +192,19 @@ fun SettingsScreen(
                 dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep my data") } },
             )
         }
+    }
+}
+
+@Composable
+private fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(label, style = MaterialTheme.typography.titleMedium, color = ReclaimTheme.palette.text, modifier = Modifier.weight(1f))
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(checkedTrackColor = Bright.Violet, checkedThumbColor = Color.White),
+            modifier = Modifier.semantics { contentDescription = label },
+        )
     }
 }
 

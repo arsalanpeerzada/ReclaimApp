@@ -1,6 +1,6 @@
 # Reclaim
 
-An Android app that counts the Instagram and TikTok reels you watch and uses white-hat gamification to help you watch fewer. It's built from the design in `Digital Wellbeing App - Gamification Design.pdf`. Its north star is less time in every app, Reclaim included.
+An Android app that counts the Instagram and TikTok reels you watch and uses white-hat gamification to help you watch fewer. It's built from the design in [`docs/DESIGN.md`](docs/DESIGN.md). Its north star is less time in every app, Reclaim included.
 
 Personal project. Working name and application id (`io.github.arsalanpeerzada.reclaim`) to be settled before any Play release.
 
@@ -13,7 +13,8 @@ Personal project. Working name and application id (`io.github.arsalanpeerzada.re
 | Phase 2 | Pip's garden (grows on good days, droops gently on bad ones), mindful pause at 80% and 100%, offline quests with surprise blooms |
 | Phase 3 | Daily mood tag, weekly reflection with a budget suggestion, monthly WHO-5 check-in, squad share card (no server) |
 | Outcomes | 30-day trend, graduation when Reclaim is no longer needed |
-| Privacy | No internet permission, no accounts, no backups, "Delete all my data" in Settings |
+| Impact | Opt-in anonymous daily summaries to Firebase, and an admin dashboard for investor-ready impact numbers |
+| Privacy | Nothing leaves the phone without an opt-in; separate consent for mood and WHO-5; stop-and-delete; "Delete all my data" |
 
 Pip, the mascot, gets sadder the further you go over budget. He only ever shows his own feelings: the copy never blames the user, and he's fine again the next morning.
 
@@ -27,6 +28,20 @@ Needs Android Studio with JDK 17 or later and Android SDK 37.
 ```
 
 Release builds are signed from `keystore.properties` (copy `keystore.properties.example`; Git ignores the real file). Without it they're unsigned.
+
+## Admin dashboard and Firebase
+
+The app can share anonymous daily summaries (opt-in only; see `PRIVACY.md`) to a Firebase project, and `dashboard/` shows the impact across everyone: reel reduction, days within budget, mindful pause stop rate, retention, WHO-5 change and graduations, plus a copyable pitch summary.
+
+Until there are real users, the dashboard runs on **sample data**, marked with a banner on every view. Never present sample numbers as results.
+
+To connect your own Firebase project:
+
+1. Create a Firebase project. Add an Android app with id `io.github.arsalanpeerzada.reclaim` and put its `google-services.json` in `app/` (Git ignores it). Without it the app builds normally and simply doesn't offer sharing.
+2. Enable **Anonymous** and **Google** sign-in in Firebase Authentication, and create a Firestore database in your chosen region.
+3. In `firebase/firestore.rules`, replace `ADMIN_EMAIL_PLACEHOLDER@example.com` with your admin Google account, then deploy the rules and indexes with the Firebase CLI: `firebase deploy --only firestore`.
+4. Add a web app in Firebase, copy `dashboard/firebase-config.example.js` to `dashboard/firebase-config.js` and paste its config.
+5. Serve the dashboard (`python -m http.server 5173 --directory dashboard`, or `firebase deploy --only hosting`), choose **Live data** and sign in with the admin account.
 
 ## How counting works
 
@@ -52,7 +67,8 @@ The domain rules are pure Kotlin with unit tests in `app/src/test`.
 ## Before a public release
 
 - [ ] Check counting accuracy on devices, especially TikTok
-- [ ] Data protection and security review, as the design doc requires (see `PRIVACY.md`)
+- [ ] Data protection and security review, as the design doc requires (see `PRIVACY.md`), including consent wording, Firestore region and retention
+- [ ] Google Play Data safety form, listing the opt-in shared data
 - [ ] Google Play accessibility declaration (draft in `docs/play-accessibility-declaration.md`)
 - [ ] Confirm WHO-5 attribution wording on the official WHO-5 page
 - [ ] Settle the app name and application id

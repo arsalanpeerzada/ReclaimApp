@@ -57,7 +57,7 @@ class ReelCountingService : AccessibilityService() {
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
 
-        val pause = MindfulPauseOverlay(this).also { pause = it }
+        val pause = MindfulPauseOverlay(this, onOutcome = container::recordPause).also { pause = it }
         scope.launch { container.pauseRequests.collect(pause::show) }
 
         // Today's live count, or null when the user has switched the counter off.

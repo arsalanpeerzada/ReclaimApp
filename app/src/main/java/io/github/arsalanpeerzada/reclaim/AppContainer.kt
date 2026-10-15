@@ -13,6 +13,7 @@ import io.github.arsalanpeerzada.reclaim.data.WellbeingRepository
 import io.github.arsalanpeerzada.reclaim.data.settingsDataStore
 import io.github.arsalanpeerzada.reclaim.domain.PauseRequest
 import io.github.arsalanpeerzada.reclaim.domain.PauseTracker
+import io.github.arsalanpeerzada.reclaim.stats.StatsSharing
 import java.time.Clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,9 +24,9 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /** Hand-wired dependencies, shared by the activity and the counting service (same process). */
 class AppContainer(context: Context) {
@@ -33,7 +34,7 @@ class AppContainer(context: Context) {
     private val clock = Clock.systemDefaultZone()
 
     private val database = Room.databaseBuilder(context, ReclaimDatabase::class.java, "reclaim.db")
-        .addMigrations(ReclaimDatabase.MIGRATION_1_2, ReclaimDatabase.MIGRATION_2_3)
+        .addMigrations(ReclaimDatabase.MIGRATION_1_2, ReclaimDatabase.MIGRATION_2_3, ReclaimDatabase.MIGRATION_3_4)
         .build()
 
     val settings = SettingsRepository(context.settingsDataStore)
@@ -41,6 +42,8 @@ class AppContainer(context: Context) {
     val quests = QuestRepository(database.dao(), clock)
     val wellbeing = WellbeingRepository(database.dao(), clock)
     val diagnostics = CountingDiagnostics()
+    val dao = database.dao()
+    val stats = StatsSharing(context.applicationContext, this)
 
     private val pauseTracker = PauseTracker()
     private val pauseLock = Mutex()
@@ -54,9 +57,21 @@ class AppContainer(context: Context) {
      * The app is back at onboarding afterwards. There is no copy anywhere else to delete.
      */
     suspend fun deleteAllData() {
+        // Anything already shared goes too, while we still know whose it was.
+        if (settings.settings.first().shareStats) runCatching { stats.stopAndDelete() }
         withContext(Dispatchers.IO) { database.clearAllTables() }
         settings.clearAll()
         diagnostics.clear()
+    }
+
+    /** Background jobs that should run whenever the app process starts. */
+    fun start() {
+        applicationScope.launch { runCatching { stats.ensureScheduled() } }
+    }
+
+    /** The mindful pause showed; [stopped] when the user chose "I'm done for now". */
+    fun recordPause(stopped: Boolean) {
+        applicationScope.launch { dao.recordPause(reels.today().toEpochDay(), shown = if (stopped) 0 else 1, stopped = if (stopped) 1 else 0) }
     }
 
     fun recordReel(app: TrackedApp) {
@@ -73,4 +88,9 @@ class AppContainer(context: Context) {
 
 class ReclaimApp : Application() {
     val container by lazy { AppContainer(this) }
+
+    override fun onCreate() {
+        super.onCreate()
+        container.start()
+    }
 }

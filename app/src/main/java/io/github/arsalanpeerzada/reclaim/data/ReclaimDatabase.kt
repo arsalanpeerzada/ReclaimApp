@@ -37,6 +37,10 @@ data class DayMood(@PrimaryKey val epochDay: Long, val mood: Int)
 @Entity(tableName = "who5_result")
 data class Who5Result(@PrimaryKey val epochDay: Long, val rawScore: Int)
 
+/** How the mindful pause went that day: how often it showed, and how often the user stopped. */
+@Entity(tableName = "day_pauses")
+data class DayPauses(@PrimaryKey val epochDay: Long, val shown: Int, val stopped: Int)
+
 @Dao
 abstract class ReclaimDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
@@ -87,6 +91,21 @@ abstract class ReclaimDao {
     @Query("SELECT * FROM who5_result ORDER BY epochDay")
     abstract fun observeWho5(): Flow<List<Who5Result>>
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    abstract suspend fun insertPausesIfAbsent(row: DayPauses): Long
+
+    @Query("UPDATE day_pauses SET shown = shown + :shown, stopped = stopped + :stopped WHERE epochDay = :epochDay")
+    abstract suspend fun addPauses(epochDay: Long, shown: Int, stopped: Int)
+
+    @Transaction
+    open suspend fun recordPause(epochDay: Long, shown: Int, stopped: Int) {
+        insertPausesIfAbsent(DayPauses(epochDay, 0, 0))
+        addPauses(epochDay, shown, stopped)
+    }
+
+    @Query("SELECT * FROM day_pauses ORDER BY epochDay")
+    abstract fun observePauses(): Flow<List<DayPauses>>
+
     @Query("SELECT * FROM daily_reels ORDER BY epochDay")
     abstract fun observeReels(): Flow<List<DailyReels>>
 
@@ -95,8 +114,8 @@ abstract class ReclaimDao {
 }
 
 @Database(
-    entities = [DailyReels::class, DailyBudget::class, QuestDone::class, DayMood::class, Who5Result::class],
-    version = 3,
+    entities = [DailyReels::class, DailyBudget::class, QuestDone::class, DayMood::class, Who5Result::class, DayPauses::class],
+    version = 4,
     exportSchema = true,
 )
 abstract class ReclaimDatabase : RoomDatabase() {
@@ -118,6 +137,16 @@ abstract class ReclaimDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS `day_mood` (`epochDay` INTEGER NOT NULL, `mood` INTEGER NOT NULL, PRIMARY KEY(`epochDay`))")
                 db.execSQL("CREATE TABLE IF NOT EXISTS `who5_result` (`epochDay` INTEGER NOT NULL, `rawScore` INTEGER NOT NULL, PRIMARY KEY(`epochDay`))")
+            }
+        }
+
+        /** Mindful pause outcomes, for the user's insights and (if they opt in) the impact dashboard. */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `day_pauses` (`epochDay` INTEGER NOT NULL, `shown` INTEGER NOT NULL, " +
+                        "`stopped` INTEGER NOT NULL, PRIMARY KEY(`epochDay`))",
+                )
             }
         }
     }
