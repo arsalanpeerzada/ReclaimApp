@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Reclaim</string>
+    <string name="accessibility_service_label">Reclaim reel counter</string>
+    <string name="accessibility_service_description">Counts the reels you watch in Instagram and TikTok, on this phone only. It notices which app is open so the live counter shows only in Instagram and TikTok, and it notices when a full-screen reel changes. It can show a short mindful pause when you near your budget. It does not read text, messages, images, video or anything you type, in any app, and nothing leaves your phone.</string>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    No package filter: the service has to see which app comes to the front so the live counter can
+    appear in Instagram and TikTok and disappear elsewhere. For other apps it reads only that package
+    name; ReelCountingService drops their scroll events before reading anything else. For Instagram and
+    TikTok (see TrackedApp) it reads scroll positions, the scroller's size and its view id. It never
+    reads text, images or anything typed, in any app.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeViewScrolled|typeWindowStateChanged|typeWindowsChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagReportViewIds|flagRetrieveInteractiveWindows"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/accessibility_service_description"
+    android:notificationTimeout="100" />

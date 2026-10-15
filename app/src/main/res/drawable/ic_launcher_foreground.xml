@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pip, the mascot: the same shapes as ui/components/Pip.kt, scaled into the adaptive icon's safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.5"
+        android:scaleY="0.5"
+        android:translateX="24"
+        android:translateY="21.5">
+        <path android:pathData="M60,22c0,-8 5,-13 13,-15" android:strokeColor="#FF1D1733" android:strokeLineCap="round" android:strokeWidth="5" />
+        <path android:pathData="M70,7a6,6 0,1 0,12 0a6,6 0,1 0,-12 0z" android:fillColor="#FFFF7657" android:strokeColor="#FF1D1733" android:strokeWidth="4" />
+        <path android:pathData="M60,22c26,0 46,20 46,48s-18,48 -46,48S14,98 14,70 34,22 60,22z" android:fillColor="#FFFFC83D" android:strokeColor="#FF1D1733" android:strokeWidth="5" />
+        <path android:pathData="M29,82a7,4 0,1 0,14 0a7,4 0,1 0,-14 0z" android:fillColor="#FFFF94C6" />
+        <path android:pathData="M77,82a7,4 0,1 0,14 0a7,4 0,1 0,-14 0z" android:fillColor="#FFFF94C6" />
+        <path android:pathData="M41,68a5,7 0,1 0,10 0a5,7 0,1 0,-10 0z" android:fillColor="#FF1D1733" />
+        <path android:pathData="M69,68a5,7 0,1 0,10 0a5,7 0,1 0,-10 0z" android:fillColor="#FF1D1733" />
+        <path android:pathData="M48,86c6,7 18,7 24,0" android:strokeColor="#FF1D1733" android:strokeLineCap="round" android:strokeWidth="5" />
+    </group>
+</vector>
