@@ -39,7 +39,7 @@ To connect your own Firebase project:
 
 1. Create a Firebase project. Add an Android app with id `io.github.arsalanpeerzada.reclaim` and put its `google-services.json` in `app/` (Git ignores it). Without it the app builds normally and simply doesn't offer sharing.
 2. Enable **Anonymous** and **Google** sign-in in Firebase Authentication, and create a Firestore database in your chosen region.
-3. In `firebase/firestore.rules`, replace `ADMIN_EMAIL_PLACEHOLDER@example.com` with your admin Google account, then deploy the rules and indexes with the Firebase CLI: `firebase deploy --only firestore`.
+3. In the Firebase console, add a Firestore document `config/admins` with a field `emails` (array) holding your admin Google account(s). Then deploy the rules and indexes: `npx firebase-tools deploy --only firestore`. Admin emails live only in that document, never in this repo.
 4. Add a web app in Firebase, copy `dashboard/firebase-config.example.js` to `dashboard/firebase-config.js` and paste its config.
 5. Serve the dashboard (`python -m http.server 5173 --directory dashboard`, or `firebase deploy --only hosting`), choose **Live data** and sign in with the admin account.
 

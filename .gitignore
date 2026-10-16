@@ -17,3 +17,6 @@ google-services.json
 dashboard/firebase-config.js
 # Local tool config
 .claude/
+build-log.txt
+test-log.txt
+build-log.utf8.txt

@@ -7,6 +7,9 @@ const today = new Date().toISOString().slice(0, 10);
 const $ = (id) => document.getElementById(id);
 const fmt = (n, digits = 0) => (n == null || Number.isNaN(n) ? "n/a" : n.toLocaleString("en-GB", { maximumFractionDigits: digits }));
 const signed = (n) => (n == null ? "n/a" : `${n > 0 ? "+" : ""}${fmt(n)}`);
+const pct = (n) => (n == null || Number.isNaN(n) ? "n/a" : `${fmt(n)}%`);
+const signedPct = (n) => (n == null ? "n/a" : `${signed(n)}%`);
+const EMPTY = { users: [], days: [], checkins: [] };
 
 let source = "sample";
 let firebase = null; // { auth, db, fns } once configured
@@ -28,14 +31,14 @@ function tile(colour, value, label, detail, delay) {
 function renderTiles(m) {
   const tiles = [
     ["violet", fmt(m.users), "people sharing", `${fmt(m.active7)} active this week, ${fmt(m.new30)} new this month`],
-    ["coral", `${signed(m.medianChangePercent)}%`, "median change in reels a day", `first week to latest, ${fmt(m.usersWithTwoWeeks)} people`],
-    ["sunflower", `${fmt(m.cutByQuarterPercent)}%`, "cut reels by a quarter or more", "of people with two weeks or more"],
-    ["sky", `${fmt(m.withinBudgetPercent)}%`, "days within their own budget", "last 30 days"],
-    ["mint", `${fmt(m.pauseStopPercent)}%`, "mindful pauses that ended the session", `${fmt(m.pausesShown)} pauses shown`],
+    ["coral", signedPct(m.medianChangePercent), "median change in reels a day", `first week to latest, ${fmt(m.usersWithTwoWeeks)} people`],
+    ["sunflower", pct(m.cutByQuarterPercent), "cut reels by a quarter or more", "of people with two weeks or more"],
+    ["sky", pct(m.withinBudgetPercent), "days within their own budget", "last 30 days"],
+    ["mint", pct(m.pauseStopPercent), "mindful pauses that ended the session", `${fmt(m.pausesShown)} pauses shown`],
     ["pink", m.who5.people ? `${fmt(m.who5.first)} → ${fmt(m.who5.latest)}` : "n/a", "WHO-5 wellbeing, first to latest", `${fmt(m.who5.people)} people with 2+ check-ins`],
-    ["violet", `${fmt(m.retentionD30.rate)}%`, "30-day retention", `7-day: ${fmt(m.retentionD7.rate)}%`],
+    ["violet", pct(m.retentionD30.rate), "30-day retention", `7-day: ${pct(m.retentionD7.rate)}`],
     ["sunflower", fmt(m.hoursReclaimed), "hours won back", `${fmt(m.questsDone)} offline quests done`],
-    ["mint", fmt(m.graduates), "graduates", `${fmt(m.graduationPercent)}% of people past 30 days`],
+    ["mint", fmt(m.graduates), "graduates", `${pct(m.graduationPercent)} of people past 30 days`],
   ];
   $("tiles").replaceChildren(...tiles.map((t, i) => tile(...t, i)));
 }
@@ -135,12 +138,14 @@ async function loadLive() {
   const user = fb.auth.currentUser;
   $("auth").hidden = false;
   if (!user) {
+    render(EMPTY, false);
     $("auth").textContent = "Sign in with Google";
     $("status").textContent = "Sign in with an admin account to see live data.";
     return;
   }
   $("auth").textContent = "Sign out";
   $("status").textContent = "Loading live data...";
+  render(EMPTY, false);
   const { collection, collectionGroup, getDocs, query, where } = fb.fs;
   try {
     const since = addDays(today, -180);
@@ -158,7 +163,7 @@ async function loadLive() {
     $("status").textContent = users.empty ? "Connected. Nobody has opted in to sharing yet." : "";
   } catch (e) {
     $("status").textContent = e.code === "permission-denied"
-      ? "This account isn't an admin. Add it to isAdmin() in firebase/firestore.rules."
+      ? "This account isn't an admin. Add its email to the emails array in the Firestore document config/admins."
       : `Couldn't load live data (${e.code || e.message}).`;
   }
 }

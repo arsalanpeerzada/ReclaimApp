@@ -2,8 +2,9 @@ rules_version = '2';
 
 // Reclaim: anonymous, opt-in stats.
 // - Each phone signs in anonymously and may only write and delete its own documents.
-// - Only admins may read across users (the dashboard). Replace the placeholder below with your
-//   admin Google account(s) before deploying; never commit real addresses to a public repo.
+// - Only admins may read across users (the dashboard). Admins are listed in the document
+//   config/admins as { emails: ["you@example.com"] }, added in the Firebase console. No client can
+//   read or write it, so no email ever has to appear in this (public) repo.
 // - Writes are validated so a phone can't send anything beyond the agreed summary fields.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -19,7 +20,8 @@ service cloud.firestore {
     function isAdmin() {
       return signedIn()
         && request.auth.token.email_verified == true
-        && request.auth.token.email in ['ADMIN_EMAIL_PLACEHOLDER@example.com'];
+        && exists(/databases/$(database)/documents/config/admins)
+        && request.auth.token.email in get(/databases/$(database)/documents/config/admins).data.emails;
     }
 
     function onlyKeys(allowed) {
@@ -60,6 +62,11 @@ service cloud.firestore {
           && request.resource.data.score is int
           && request.resource.data.score >= 0 && request.resource.data.score <= 100;
       }
+    }
+
+    // Admin list: managed in the Firebase console only.
+    match /config/{doc} {
+      allow read, write: if false;
     }
 
     // The dashboard reads every user's days and check-ins with collection-group queries.

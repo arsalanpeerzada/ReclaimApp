@@ -25,6 +25,8 @@ import io.github.arsalanpeerzada.reclaim.domain.Who5
 import java.time.LocalDate
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 
 /**
@@ -48,7 +50,7 @@ class StatsSharing(private val context: Context, private val container: AppConta
     }
 
     /** Stops sharing and deletes everything this phone shared, including its anonymous account. */
-    suspend fun stopAndDelete() {
+    suspend fun stopAndDelete(): Unit = lock.withLock {
         container.settings.setSharing(stats = false, wellbeing = false)
         WorkManager.getInstance(context).cancelUniqueWork(PERIODIC)
         if (!available) return
@@ -65,8 +67,13 @@ class StatsSharing(private val context: Context, private val container: AppConta
         user.delete().await()
     }
 
-    /** Uploads completed days not yet shared. True when done (or nothing to do), false to retry later. */
-    suspend fun upload(): Boolean {
+    /**
+     * Uploads completed days not yet shared. True when done (or nothing to do), false to retry later.
+     * One at a time: two uploads racing would each sign in and create two anonymous accounts.
+     */
+    suspend fun upload(): Boolean = lock.withLock { uploadLocked() }
+
+    private suspend fun uploadLocked(): Boolean {
         val settings = container.settings.settings.first()
         if (!settings.shareStats || !available) return true
         val startDay = settings.startDay ?: return true
@@ -144,6 +151,9 @@ class StatsSharing(private val context: Context, private val container: AppConta
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "unknown"
 
     private companion object {
+        /** Shared by every upload and delete in the process. */
+        val lock = Mutex()
+
         const val PERIODIC = "stats-upload"
         const val NOW = "stats-upload-now"
 
