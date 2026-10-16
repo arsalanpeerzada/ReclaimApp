@@ -20,3 +20,5 @@ dashboard/firebase-config.js
 build-log.txt
 test-log.txt
 build-log.utf8.txt
+# Firebase CLI cache
+.firebase/

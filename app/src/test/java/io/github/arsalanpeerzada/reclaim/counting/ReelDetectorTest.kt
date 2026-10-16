@@ -82,12 +82,30 @@ class ReelDetectorTest {
     }
 
     @Test
+    fun `a feed resumed deep in after a restart isn't double counted`() {
+        assertEquals(0, detector.decide(instagram("com.instagram.android:id/clips_viewer_view_pager", 7)).reels)
+        assertEquals(1, detector.decide(instagram("com.instagram.android:id/clips_viewer_view_pager", 8)).reels)
+    }
+
+    @Test
     fun `pagers that report their scroll offset count by whole screens`() {
         fun at(scrollY: Int) = tiktok(-1, -1).copy(scrollY = scrollY, maxScrollY = 2400 * 50)
         assertEquals(Decision.COUNTED, detector.decide(at(0)))
         assertEquals(Decision.SAME_SWIPE, detector.decide(at(1200)))
         assertEquals(Decision.COUNTED, detector.decide(at(2400)))
         assertEquals(Decision.SAME_REEL, detector.decide(at(2410)))
+    }
+
+    /** Real TikTok events from the Pixel 8 on 16 October 2026: opened on a reel, then 4 swipes. */
+    @Test
+    fun `TikTok's scroll offsets give an exact count`() {
+        val events = listOf(588 to 588, 1754 to 1166, 2232 to 478, 2802 to 570, 4301 to 1499, 4464 to 163,
+            5093 to 629, 6074 to 981, 6695 to 621, 6696 to 1, 7653 to 957, 8928 to 1275)
+        val reels = events.sumOf { (scrollY, dy) ->
+            detector.decide(tiktok(-1, -1, height = 2232).copy(scrollY = scrollY, maxScrollY = 0, scrollDeltaY = dy)).reels
+        }
+        // The reel it opened on, plus one for each of the 4 swipes. The old rule counted 6.
+        assertEquals(5, reels)
     }
 
     @Test

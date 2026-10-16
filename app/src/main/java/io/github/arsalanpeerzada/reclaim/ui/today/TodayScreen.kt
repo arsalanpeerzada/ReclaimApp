@@ -98,8 +98,9 @@ fun TodayScreen(
     Column(
         Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            // Below the status bar before scrolling, so content never slides under the clock.
             .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
             .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = FloatingNavClearance),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -262,7 +263,7 @@ private fun RingCard(overview: Overview) {
                 RollingNumber(
                     "${today.reels}",
                     MaterialTheme.typography.displayMedium,
-                    if (today.reels > today.budget) BudgetMeter.Overflow else palette.text,
+                    if (today.reels > today.budget) palette.overflow else palette.text,
                 )
                 Text("of ${today.budget} reels", style = MaterialTheme.typography.bodyMedium, color = palette.textMuted)
             }
@@ -297,6 +298,7 @@ private fun AppChip(app: TrackedApp, count: Int, dot: Color, container: Color, m
 @Composable
 private fun SegmentedRing(fraction: Float, modifier: Modifier = Modifier) {
     val track = ReclaimTheme.palette.track
+    val overflow = ReclaimTheme.palette.overflow
     val animated by animateFloatAsState(fraction, tween(600), label = "ring")
     Canvas(modifier) {
         val stroke = 18.dp.toPx()
@@ -318,7 +320,7 @@ private fun SegmentedRing(fraction: Float, modifier: Modifier = Modifier) {
         lap(stroke / 2, stroke, { BudgetMeter.firstLap(animated, it) }, { BudgetMeter.colours[it] }, track)
         if (animated > 1f) {
             val inner = 8.dp.toPx()
-            lap(stroke + 6.dp.toPx() + inner / 2, inner, { BudgetMeter.secondLap(animated, it) }, { BudgetMeter.Overflow }, null)
+            lap(stroke + 6.dp.toPx() + inner / 2, inner, { BudgetMeter.secondLap(animated, it) }, { overflow }, null)
         }
     }
 }

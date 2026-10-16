@@ -53,6 +53,8 @@ data class ReclaimPalette(
     val softPink: Color,
     /** The garden's earth. */
     val soil: Color,
+    /** Past-budget numbers and the meter's second lap, readable on this palette's cards. */
+    val overflow: Color,
     /** The dark pill: main buttons and the navigation bar. */
     val pill: Color,
     val onPill: Color,
@@ -72,6 +74,7 @@ private val LightPalette = ReclaimPalette(
     softCoral = Color(0xFFFFE0D8),
     softPink = Color(0xFFFFE3F0),
     soil = Color(0xFFF1DEC6),
+    overflow = Color(0xFF8E2F5A),
     pill = Bright.Ink,
     onPill = Color(0xFFFFFFFF),
 )
@@ -90,6 +93,7 @@ private val DarkPalette = ReclaimPalette(
     softCoral = Color(0xFF45252A),
     softPink = Color(0xFF452440),
     soil = Color(0xFF3B2F52),
+    overflow = Color(0xFFE0629B),
     pill = Color(0xFFFFF6EA),
     onPill = Bright.Ink,
 )

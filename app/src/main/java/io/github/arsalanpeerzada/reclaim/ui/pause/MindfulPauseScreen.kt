@@ -79,7 +79,11 @@ fun MindfulPauseScreen(request: PauseRequest, onDone: () -> Unit, onKeepWatching
             )
             Text(
                 if (budgetReached) {
-                    "You've watched ${request.reels} reels, the budget you set. Keep going if you want; it's your call."
+                    if (request.reels > request.budget) {
+                        "You've watched ${request.reels} reels, past your budget of ${request.budget}. Keep going if you want; it's your call."
+                    } else {
+                        "You've watched ${request.reels} reels, the budget you set. Keep going if you want; it's your call."
+                    }
                 } else {
                     "${request.reels} of ${request.budget} reels today. Take one breath, then decide."
                 },

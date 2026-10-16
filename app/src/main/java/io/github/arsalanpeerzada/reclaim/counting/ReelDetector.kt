@@ -33,8 +33,16 @@ data class ScrollSignal(
 enum class Decision(val description: String, val reels: Int) {
     COUNTED("Counted", 1),
 
-    /** The first scroll seen already sits on a later reel, so the one before it was watched too. */
+    /**
+     * The first scroll seen lands on reel 1: the user opened on reel 0 a moment ago and swiped, so that
+     * one was watched too. Deeper positions mean a feed resumed after Reclaim restarted, already counted.
+     */
     COUNTED_WITH_PREVIOUS("Counted, plus the reel before", 2),
+    /**
+     * The first scroll seen sits deep in a feed (reel 2 or later): the counter restarted (an update, or
+     * Android restarting the service) while the app kept its place, so this reel was already counted.
+     */
+    RESUMED("Resumed, already counted", 0),
     NOT_TRACKED("Not a tracked app", 0),
     NO_SOURCE("Container unknown", 0),
     OTHER_CONTAINER("Not the reel viewer", 0),
@@ -51,7 +59,9 @@ enum class Decision(val description: String, val reels: Int) {
  * 1. **Positions** (Instagram): the reel on screen is the first visible position, which only changes
  *    once the previous reel has fully left. A swipe counts once when it lands; one that snaps back
  *    counts nothing.
- * 2. **Scroll offset**: a full-screen pager scrolled by N screens is on reel N, once it settles.
+ * 2. **Scroll offset** (TikTok, confirmed on a Pixel 8 on 16 October 2026: offsets step by exactly one
+ *    container height per reel, with no maximum reported): a pager scrolled by N screens is on reel N,
+ *    once it settles within 3% of a whole screen.
  * 3. **Scroll distance**: a burst of scroll events counts once it has moved at least 40% of a screen,
  *    which ignores the small follow-up scrolls some apps make after a new video starts.
  * 4. **Timing alone** (TikTok on 14 October 2026 reported none of the above): a burst counts unless it
@@ -92,7 +102,11 @@ class ReelDetector(
         val container = containers[key]
         if (container == null) {
             containers[key] = Container(position, signal.timeMillis, signal.timeMillis)
-            return if (position != null && position > 0) Decision.COUNTED_WITH_PREVIOUS else Decision.COUNTED
+            return when {
+                position == null || position == 0 -> Decision.COUNTED
+                position == 1 -> Decision.COUNTED_WITH_PREVIOUS
+                else -> Decision.RESUMED
+            }
         }
 
         // 1 and 2: a known position.
@@ -102,7 +116,7 @@ class ReelDetector(
             container.position = position
             return if (position != previous) counted(container, signal) else Decision.SAME_REEL
         }
-        if (signal.scrollY >= 0 && signal.maxScrollY > 0) {
+        if (reportsOffset(signal)) {
             // Offsets are reported but the pager is between reels: wait for it to settle.
             container.lastEventMillis = signal.timeMillis
             return Decision.SAME_SWIPE
@@ -141,11 +155,20 @@ class ReelDetector(
     /** The reel on screen, if the app says: its position, or whole screens scrolled once settled. */
     private fun positionOf(signal: ScrollSignal): Int? {
         if (signal.fromIndex >= 0) return signal.fromIndex
-        if (signal.scrollY >= 0 && signal.maxScrollY > 0) {
+        if (reportsOffset(signal)) {
             val page = signal.scrollY.toFloat() / signal.containerHeight
             val nearest = page.roundToInt()
-            return if (abs(page - nearest) <= 0.08f) nearest else null
+            return if (abs(page - nearest) <= SETTLED_FRACTION) nearest else null
         }
         return null
+    }
+
+    /** Whether this event carries a real scroll offset: some apps report none, and leave it at 0 or -1. */
+    private fun reportsOffset(signal: ScrollSignal): Boolean =
+        signal.scrollY > 0 || signal.maxScrollY > 0 || (signal.scrollY == 0 && signal.scrollDeltaY.let { it != -1 && it != 0 })
+
+    private companion object {
+        /** How close to a whole screen the pager must be to count as settled on a reel. */
+        const val SETTLED_FRACTION = 0.03f
     }
 }

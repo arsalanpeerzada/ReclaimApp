@@ -120,7 +120,8 @@ private fun Meter(fraction: Float) {
                 val first = BudgetMeter.firstLap(fraction, i)
                 val second = BudgetMeter.secondLap(fraction, i)
                 if (first > 0f) Box(Modifier.fillMaxWidth().fillMaxHeight(first).background(BudgetMeter.colours[i]))
-                if (second > 0f) Box(Modifier.fillMaxWidth().fillMaxHeight(second).background(BudgetMeter.Overflow))
+                // The pill is always dark, so the second lap uses the lifted plum.
+                if (second > 0f) Box(Modifier.fillMaxWidth().fillMaxHeight(second).background(BudgetMeter.OverflowOnDark))
             }
         }
     }

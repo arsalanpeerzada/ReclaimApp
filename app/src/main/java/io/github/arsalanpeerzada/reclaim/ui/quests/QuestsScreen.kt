@@ -101,8 +101,9 @@ fun QuestsScreen(container: AppContainer) {
     Column(
         Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            // Below the status bar before scrolling, so content never slides under the clock.
             .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
             .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = FloatingNavClearance),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {

@@ -17,8 +17,11 @@ object BudgetMeter {
         Bright.Mint, Bright.Sunflower, Bright.Sunflower, Bright.Coral, Bright.Coral,
     )
 
-    /** The second lap, past the budget. Darker than every lap-one colour so it reads even without colour vision. */
+    /** The second lap, past the budget, on light backgrounds. Darker than every lap-one colour. */
     val Overflow = Color(0xFF8E2F5A)
+
+    /** The same plum, lifted so it stays readable on dark backgrounds (the pill, dark mode). */
+    val OverflowOnDark = Color(0xFFE0629B)
 
     /** How full segment [i] is (0 to 1) in the first lap; partly filled segments move with every reel. */
     fun firstLap(fraction: Float, i: Int): Float = (fraction * SEGMENTS - i).coerceIn(0f, 1f)
