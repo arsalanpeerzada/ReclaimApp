@@ -56,6 +56,16 @@ class PhaseThreeTest {
     }
 
     @Test
+    fun `WHO-5 poor wellbeing follows the official rule`() {
+        // Raw 12 is below 13.
+        assertTrue(Who5.indicatesPoorWellbeing(listOf(3, 3, 2, 2, 2)))
+        // Raw 13, but one answer of 1: still poor.
+        assertTrue(Who5.indicatesPoorWellbeing(listOf(4, 3, 3, 2, 1)))
+        // Raw 13 with every answer 2 or more: not poor.
+        assertFalse(Who5.indicatesPoorWellbeing(listOf(3, 3, 3, 2, 2)))
+    }
+
+    @Test
     fun `WHO-5 scores as a percentage and is due monthly`() {
         assertEquals(100, Who5.percent(25))
         assertEquals(48, Who5.percent(12))

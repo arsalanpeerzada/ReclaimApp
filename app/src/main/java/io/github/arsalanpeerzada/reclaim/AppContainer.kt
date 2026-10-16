@@ -12,6 +12,7 @@ import io.github.arsalanpeerzada.reclaim.data.SettingsRepository
 import io.github.arsalanpeerzada.reclaim.data.WellbeingRepository
 import io.github.arsalanpeerzada.reclaim.data.settingsDataStore
 import io.github.arsalanpeerzada.reclaim.domain.PauseRequest
+import io.github.arsalanpeerzada.reclaim.domain.PauseStage
 import io.github.arsalanpeerzada.reclaim.domain.PauseTracker
 import io.github.arsalanpeerzada.reclaim.stats.StatsSharing
 import java.time.Clock
@@ -69,6 +70,11 @@ class AppContainer(context: Context) {
         applicationScope.launch { runCatching { stats.ensureScheduled() } }
     }
 
+    /** Today's one emergency unlock of the commitment lock. */
+    fun useEmergencyUnlock() {
+        applicationScope.launch { settings.useEmergencyUnlock(reels.today()) }
+    }
+
     /** The mindful pause showed; [stopped] when the user chose "I'm done for now". */
     fun recordPause(stopped: Boolean) {
         applicationScope.launch { dao.recordPause(reels.today().toEpochDay(), shown = if (stopped) 0 else 1, stopped = if (stopped) 1 else 0) }
@@ -81,6 +87,8 @@ class AppContainer(context: Context) {
             if (!current.pauseEnabled) return@launch
             // Reels can arrive back to back; decide one at a time so a stage is never shown twice.
             val request = pauseLock.withLock { pauseTracker.onReel(reels.today(), total, current.dailyBudget) }
+            // With the commitment lock on, the lock replaces the "budget reached" pause.
+            if (request?.stage == PauseStage.BudgetReached && current.commitmentLock) return@launch
             request?.let(_pauseRequests::tryEmit)
         }
     }

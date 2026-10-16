@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.arsalanpeerzada.reclaim.data.Settings
+import io.github.arsalanpeerzada.reclaim.domain.CommitmentLock
 import io.github.arsalanpeerzada.reclaim.ui.components.FloatingNavClearance
 import io.github.arsalanpeerzada.reclaim.ui.components.GameCard
 import io.github.arsalanpeerzada.reclaim.ui.components.PermissionCards
@@ -48,6 +49,7 @@ fun SettingsScreen(
     onSave: (budget: Int, typical: Int) -> Unit,
     onPauseEnabledChange: (Boolean) -> Unit,
     onCounterBubbleChange: (Boolean) -> Unit,
+    onCommitmentLockChange: (Boolean) -> Unit,
     onDeleteAllData: () -> Unit,
     statsAvailable: Boolean,
     onSharingChange: (stats: Boolean, wellbeing: Boolean) -> Unit,
@@ -99,6 +101,13 @@ fun SettingsScreen(
             body = "A small pill at the top centre of Instagram and TikTok with today's count. Tap it for how many are left.",
             checked = settings.counterBubbleEnabled,
             onCheckedChange = onCounterBubbleChange,
+        )
+        ToggleCard(
+            title = "Commitment lock (optional)",
+            body = "Once today's budget is used, Instagram and TikTok are locked until midnight. One emergency unlock a day " +
+                "gives ${CommitmentLock.EXTRA_REELS} more reels after a ${CommitmentLock.WAIT_SECONDS}-second wait. Off unless you want it.",
+            checked = settings.commitmentLock,
+            onCheckedChange = onCommitmentLockChange,
         )
         ToggleCard(
             title = "Mindful pause",

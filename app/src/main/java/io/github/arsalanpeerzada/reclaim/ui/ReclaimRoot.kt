@@ -106,6 +106,7 @@ fun ReclaimRoot(container: AppContainer) {
                 onSave = { budget, typical -> scope.launch { container.reels.updateGoals(budget, typical) } },
                 onPauseEnabledChange = { enabled -> scope.launch { container.settings.setPauseEnabled(enabled) } },
                 onCounterBubbleChange = { enabled -> scope.launch { container.settings.setCounterBubbleEnabled(enabled) } },
+                onCommitmentLockChange = { enabled -> scope.launch { container.settings.setCommitmentLock(enabled) } },
                 statsAvailable = container.stats.available,
                 onSharingChange = { _, wellbeing -> scope.launch { container.stats.enable(wellbeing) } },
                 onStopSharing = { scope.launch { runCatching { container.stats.stopAndDelete() } } },

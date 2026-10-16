@@ -110,15 +110,15 @@ object Reflections {
 }
 
 /**
- * The WHO-5 Wellbeing Index: five statements about the last two weeks, each scored 0 to 5. The raw
- * total (0 to 25) times 4 gives a percentage score; lower means poorer wellbeing. It is a screening
- * measure, never a diagnosis, and the app only shows it back to the user.
+ * The WHO-5 Well-Being Index (1998 version): five statements about the last two weeks, each scored 0
+ * to 5. The raw total (0 to 25) times 4 gives a percentage score; lower means poorer wellbeing. It is
+ * a screening measure, never a diagnosis, and the app only shows it back to the user.
  *
- * Checked on 15 October 2026 against Topp et al. (2015), "The WHO-5 Well-Being Index: a systematic
- * review of the literature", Psychother Psychosom 84:167-176 (item wording and the ≤50 screening
- * cut-off), and CORC's summary (answer scale, scoring, "free of charge and does not require permission
- * to use"). The official page (psykiatri-regionh.dk/who-5) could not be fetched; confirm the attribution
- * wording there before any public release.
+ * Checked on 16 October 2026 against the official English questionnaire at
+ * psykiatri-regionh.dk/who-5 ("WHO-5 questionaire - English.pdf"): wording, answer labels, scoring,
+ * interpretation (raw score below 13, or any item answered 0 or 1, indicates poor wellbeing) and
+ * monitoring change (a 10% difference is significant). The site states the copyright is now held by
+ * WHO, with questions about use to WHO-5@who.int. Deviations from the official wording must be marked.
  */
 object Who5 {
     val statements = listOf(
@@ -139,13 +139,29 @@ object Who5 {
         "At no time" to 0,
     )
 
-    /** Percentage scores at or below this are commonly read as poor wellbeing. */
-    const val LOW_PERCENT = 50
+    /** The official instruction, word for word. */
+    const val INSTRUCTION = "Please indicate for each of the five statements which is closest to how you have been " +
+        "feeling over the last two weeks. Notice that higher numbers mean better well-being."
+
+    /** Official interpretation: a raw score below this indicates poor wellbeing. */
+    const val LOW_RAW_BELOW = 13
+
+    /** Official monitoring change: a difference of this many percentage points is significant. */
+    const val SIGNIFICANT_CHANGE = 10
+
+    /** Kept for screens that only have the percentage: raw below 13 is the same as 48% or less. */
+    const val LOW_PERCENT = 48
+
+    const val ATTRIBUTION = "WHO (Five) Well-Being Index (1998 version). © Psychiatric Research Unit, " +
+        "WHO Collaborating Center for Mental Health, Frederiksborg General Hospital, Hillerød. Copyright now held by WHO."
 
     /** The design doc's cadence: monthly. */
     const val DAYS_BETWEEN = 28L
 
     fun percent(rawScore: Int): Int = rawScore.coerceIn(0, 25) * 4
+
+    /** Poor wellbeing by the official rule: raw score below 13, or any single answer of 0 or 1. */
+    fun indicatesPoorWellbeing(answers: List<Int>): Boolean = answers.sum() < LOW_RAW_BELOW || answers.any { it <= 1 }
 
     fun isDue(results: Map<LocalDate, Int>, today: LocalDate): Boolean {
         val last = results.keys.maxOrNull() ?: return true

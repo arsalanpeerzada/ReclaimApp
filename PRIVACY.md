@@ -63,4 +63,4 @@ Nothing is sent unless you tap **Share my week**. That creates an image showing 
 - Firestore region, retention period and a way to request deletion after uninstalling.
 - Google Play's prominent disclosure and consent requirements (see `docs/play-accessibility-declaration.md`), and the Data safety form, which must now list the shared data.
 - Whether reading the front app's name from every app needs more prominence.
-- WHO-5 terms of use and attribution, to confirm on the official WHO-5 page.
+- WHO-5: the official page (checked 16 October 2026) says the copyright is now held by WHO and questions about use go to WHO-5@who.int. Confirm with WHO that use in a free (or paid) consumer app is permitted before release.

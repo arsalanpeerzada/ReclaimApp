@@ -70,7 +70,7 @@ The domain rules are pure Kotlin with unit tests in `app/src/test`.
 - [ ] Data protection and security review, as the design doc requires (see `PRIVACY.md`), including consent wording, Firestore region and retention
 - [ ] Google Play Data safety form, listing the opt-in shared data
 - [ ] Google Play accessibility declaration (draft in `docs/play-accessibility-declaration.md`)
-- [ ] Confirm WHO-5 attribution wording on the official WHO-5 page
+- [ ] Confirm WHO-5 terms with WHO (WHO-5@who.int): the official page says copyright is now held by WHO. Wording, scoring and attribution in the app match the official English questionnaire (checked 16 October 2026); an official Urdu version also exists
 - [ ] Settle the app name and application id
 - [ ] Decide on a monetisation model that doesn't conflict with the north-star metric (open question in the design doc)
 

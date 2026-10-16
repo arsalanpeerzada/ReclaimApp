@@ -40,6 +40,10 @@ data class Settings(
     val lastUploadedDay: LocalDate?,
     /** The highest level already celebrated, so each level-up gets its moment once. */
     val celebratedLevel: Int,
+    /** Opt-in commitment lock: Instagram and TikTok locked once the budget is used. Off by default. */
+    val commitmentLock: Boolean,
+    /** The day the one daily emergency unlock was last used. */
+    val lockUnlockedOn: LocalDate?,
 ) {
     companion object {
         const val DEFAULT_TYPICAL = 200
@@ -63,6 +67,8 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
             shareWellbeing = prefs[SHARE_WELLBEING] ?: false,
             lastUploadedDay = prefs[LAST_UPLOADED_DAY]?.let(LocalDate::ofEpochDay),
             celebratedLevel = prefs[CELEBRATED_LEVEL] ?: 1,
+            commitmentLock = prefs[COMMITMENT_LOCK] ?: false,
+            lockUnlockedOn = prefs[LOCK_UNLOCKED_ON]?.let(LocalDate::ofEpochDay),
         )
     }
 
@@ -111,6 +117,14 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         }
     }
 
+    suspend fun setCommitmentLock(enabled: Boolean) {
+        dataStore.edit { it[COMMITMENT_LOCK] = enabled }
+    }
+
+    suspend fun useEmergencyUnlock(day: LocalDate) {
+        dataStore.edit { it[LOCK_UNLOCKED_ON] = day.toEpochDay() }
+    }
+
     suspend fun markCelebrated(level: Int) {
         dataStore.edit { it[CELEBRATED_LEVEL] = level }
     }
@@ -138,5 +152,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         val SHARE_WELLBEING = booleanPreferencesKey("share_wellbeing")
         val LAST_UPLOADED_DAY = longPreferencesKey("last_uploaded_day")
         val CELEBRATED_LEVEL = intPreferencesKey("celebrated_level")
+        val COMMITMENT_LOCK = booleanPreferencesKey("commitment_lock")
+        val LOCK_UNLOCKED_ON = longPreferencesKey("lock_unlocked_on")
     }
 }

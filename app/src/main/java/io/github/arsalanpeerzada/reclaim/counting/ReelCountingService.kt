@@ -14,7 +14,10 @@ import android.view.accessibility.AccessibilityWindowInfo
 import androidx.core.content.ContextCompat
 import io.github.arsalanpeerzada.reclaim.AppContainer
 import io.github.arsalanpeerzada.reclaim.ReclaimApp
+import io.github.arsalanpeerzada.reclaim.domain.CommitmentLock
+import io.github.arsalanpeerzada.reclaim.domain.LockState
 import io.github.arsalanpeerzada.reclaim.ui.bubble.BubbleState
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,6 +40,8 @@ class ReelCountingService : AccessibilityService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var pause: MindfulPauseOverlay? = null
     private var bubble: CounterBubbleOverlay? = null
+    private var lock: LockOverlay? = null
+    private var lockState: StateFlow<LockState?>? = null
 
     /** Whether Instagram or TikTok is the app in front. */
     private var trackedAppInFront = false
@@ -69,6 +74,31 @@ class ReelCountingService : AccessibilityService() {
             }
         }.stateIn(scope, SharingStarted.Eagerly, null)
         val bubble = CounterBubbleOverlay(this, bubbleState).also { bubble = it }
+
+        // The opt-in commitment lock: on top of everything while a tracked app is in front.
+        val lockFlow = combine(container.reels.history, container.settings.settings) { history, settings ->
+            val today = container.reels.today()
+            CommitmentLock.state(
+                enabled = settings.commitmentLock,
+                reelsToday = history.reels[today]?.values?.sum() ?: 0,
+                budget = settings.dailyBudget,
+                unlockedOn = settings.lockUnlockedOn,
+                today = today,
+            )
+        }.stateIn(scope, SharingStarted.Eagerly, null)
+        lockState = lockFlow
+        val lock = LockOverlay(this, lockFlow, onUnlock = container::useEmergencyUnlock).also { lock = it }
+        scope.launch {
+            lockFlow.collect { state ->
+                when {
+                    state == null -> lock.hide()
+                    trackedAppInFront && !keyguard.isKeyguardLocked -> {
+                        pause.dismiss()
+                        lock.show()
+                    }
+                }
+            }
+        }
         scope.launch {
             bubbleState.collect { state ->
                 when {
@@ -83,6 +113,7 @@ class ReelCountingService : AccessibilityService() {
         runCatching { unregisterReceiver(screenReceiver) }
         pause?.dismiss()
         bubble?.hide()
+        lock?.hide()
         scope.cancel()
         super.onDestroy()
     }
@@ -126,6 +157,7 @@ class ReelCountingService : AccessibilityService() {
         trackedAppInFront = inFront
         // Never on the lock screen: today's count is nobody else's business.
         if (inFront && !keyguard.isKeyguardLocked) bubble?.show() else bubble?.hide()
+        if (inFront && !keyguard.isKeyguardLocked && lockState?.value != null) lock?.show() else lock?.hide()
     }
 
     private val keyguard by lazy { getSystemService(KeyguardManager::class.java) }

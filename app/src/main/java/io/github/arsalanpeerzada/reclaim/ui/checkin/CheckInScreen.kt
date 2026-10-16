@@ -73,9 +73,11 @@ fun CheckInScreen(container: AppContainer, onBack: () -> Unit) {
             ScreenTitle("Check-in")
         }
         if (!submitted) {
-            BodyText(
-                "Five statements about the last two weeks. Pick how often each was true. " +
-                    "This is the WHO-5 Wellbeing Index; your answers stay on this phone.",
+            BodyText(Who5.INSTRUCTION)
+            Text(
+                "Over the last two weeks:",
+                style = MaterialTheme.typography.titleMedium,
+                color = palette.text,
             )
             Who5.statements.forEachIndexed { index, statement ->
                 GameCard(Modifier.fillMaxWidth(), padding = 16.dp) {
@@ -90,8 +92,7 @@ fun CheckInScreen(container: AppContainer, onBack: () -> Unit) {
                 }
             }
             Text(
-                "WHO-5 Well-Being Index, WHO Regional Office for Europe (1998). Free to use. " +
-                    "Scoring and the 50 cut-off follow Topp et al., Psychother Psychosom 2015;84:167-176.",
+                Who5.ATTRIBUTION + " Your answers stay on this phone unless you share wellbeing scores.",
                 style = MaterialTheme.typography.bodySmall,
                 color = palette.textMuted,
             )
@@ -105,7 +106,7 @@ fun CheckInScreen(container: AppContainer, onBack: () -> Unit) {
                 enabled = answers.none { it < 0 },
             )
         } else {
-            Result(raw = answers.sum(), history = history, today = container.reels.today(), onDone = onBack)
+            Result(answers = answers, history = history, today = container.reels.today(), onDone = onBack)
         }
     }
 }
@@ -131,7 +132,9 @@ private fun AnswerRow(label: String, selected: Boolean, colour: Color, onClick: 
 }
 
 @Composable
-private fun Result(raw: Int, history: Map<LocalDate, Int>, today: LocalDate, onDone: () -> Unit) {
+private fun Result(answers: List<Int>, history: Map<LocalDate, Int>, today: LocalDate, onDone: () -> Unit) {
+    val raw = answers.sum()
+    val poor = Who5.indicatesPoorWellbeing(answers)
     val palette = ReclaimTheme.palette
     val percent = Who5.percent(raw)
     var target by remember { mutableIntStateOf(0) }
@@ -148,17 +151,20 @@ private fun Result(raw: Int, history: Map<LocalDate, Int>, today: LocalDate, onD
         }
         val change = previous?.let { percent - Who5.percent(it.value) }
         PipSays(
-            if (percent > Who5.LOW_PERCENT) PipMood.Happy else PipMood.Calm,
+            if (poor) PipMood.Calm else PipMood.Happy,
             when {
                 change == null -> "Your first check-in"
+                // The official guide treats a 10-point difference as a significant change.
+                change >= Who5.SIGNIFICANT_CHANGE -> "Up $change since last time, a real change"
                 change > 0 -> "Up $change since last time"
-                change < 0 -> "Down ${-change} since last time"
+                change <= -Who5.SIGNIFICANT_CHANGE -> "Down ${-change} since last time"
+                change < 0 -> "Down ${-change}, about the same as last time"
                 else -> "Same as last time"
             },
             "Higher means better wellbeing. Next check-in in about a month.",
         )
     }
-    if (percent <= Who5.LOW_PERCENT) {
+    if (poor) {
         GameCard(Modifier.fillMaxWidth(), colour = palette.softSky, padding = 16.dp) {
             Text("Look after yourself", style = MaterialTheme.typography.titleLarge, color = palette.text)
             Text(

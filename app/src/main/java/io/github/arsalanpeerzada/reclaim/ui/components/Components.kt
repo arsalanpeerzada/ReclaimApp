@@ -312,8 +312,8 @@ fun PermissionCards(modifier: Modifier = Modifier) {
         )
         NoticeCard(
             R.drawable.ic_pause, Bright.Violet, palette.softViolet, "It can show",
-            "A live counter at the top of Instagram and TikTok, and a short mindful pause when you near your budget. " +
-                "You can switch either off in Settings.",
+            "A live counter at the top of Instagram and TikTok, a short mindful pause when you near your budget, and, " +
+                "only if you turn it on, a lock once the budget is used. All switchable in Settings.",
         )
         NoticeCard(
             R.drawable.ic_phone, Bright.Sky, palette.softSky, "It keeps",
